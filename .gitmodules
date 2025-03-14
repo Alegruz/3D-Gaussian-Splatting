@@ -1,0 +1,3 @@
+[submodule "build/Debug/external/spz"]
+	path = build/Debug/external/spz
+	url = https://github.com/nianticlabs/spz.git
