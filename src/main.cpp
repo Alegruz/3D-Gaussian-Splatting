@@ -5,24 +5,17 @@
 #include <filesystem>
 #include <string>
 
+#include "splat-types.h"
+#include "load-spz.h"
+
 struct RenderInfo
 {
 	std::filesystem::path   ModelPath;
 };
 
-void ParseCommandlineArguments(RenderInfo& outRenderInfo, const uint32_t numArguments, char** arguments)
-{
-	for (uint32_t argumentIndex = 1; argumentIndex < numArguments; ++argumentIndex)
-	{
-		const char* argument = arguments[argumentIndex];
-		std::cout << argument << '\n';
+void ParseCommandlineArguments(RenderInfo& outRenderInfo, const uint32_t numArguments, char** arguments);
 
-		if (strcmp(argument, "-m") == 0)
-		{
-			outRenderInfo.ModelPath = arguments[++argumentIndex];
-		}
-	}
-}
+void LoadModel(const std::filesystem::path& modelPath);
 
 int main(int argc, char** argv)
 {
@@ -44,4 +37,38 @@ int main(int argc, char** argv)
 	}
 
 	return 0;
+}
+
+void LoadModel(const std::filesystem::path& modelPath)
+{
+	const std::filesystem::path extension = modelPath.extension();
+	if (extension == ".ply")
+	{
+		std::cout << "Loading ply files is not yet implemented!!" << std::endl;
+		assert(false);
+		return;
+	}
+	else if (extension == ".spz")
+	{
+		spz::GaussianCloud gaussianCloud = spz::loadSpz(modelPath.string());
+
+		return;
+	}
+
+	std::cout << "Invalid file extension " << extension << "!!" << std::endl;
+	assert(false);
+}
+
+void ParseCommandlineArguments(RenderInfo& outRenderInfo, const uint32_t numArguments, char** arguments)
+{
+	for (uint32_t argumentIndex = 1; argumentIndex < numArguments; ++argumentIndex)
+	{
+		const char* argument = arguments[argumentIndex];
+		std::cout << argument << '\n';
+
+		if (strcmp(argument, "-m") == 0)
+		{
+			outRenderInfo.ModelPath = arguments[++argumentIndex];
+		}
+	}
 }
