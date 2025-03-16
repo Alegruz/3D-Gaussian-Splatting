@@ -1,74 +1,80 @@
-#include <cassert>
-#include <cstdint>
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <string>
+#include "pch.h"
 
-#include "splat-types.h"
-#include "load-spz.h"
+#include "3dgs/Renderer.h"
+#include "3dgs/Scene.h"
+#include "3dgs/Window.h"
 
-struct RenderInfo
+namespace iiixrlab
 {
-	std::filesystem::path   ModelPath;
-};
-
-void ParseCommandlineArguments(RenderInfo& outRenderInfo, const uint32_t numArguments, char** arguments);
-
-void LoadModel(const std::filesystem::path& modelPath);
+	void ParseCommandlineArguments(ApplicationInfo& outApplicationInfo, const uint32_t numArguments, char** arguments)
+	{
+		for (uint32_t argumentIndex = 1; argumentIndex < numArguments; ++argumentIndex)
+		{
+			const char* argument = arguments[argumentIndex];
+			if (strcmp(argument, "-m") == 0)
+			{
+				outApplicationInfo.ModelPath = (std::filesystem::current_path() / arguments[++argumentIndex]).generic_string();
+			}
+			else if (strcmp(argument, "-w") == 0)
+			{
+				outApplicationInfo.Width = std::atoi(arguments[++argumentIndex]);
+			}
+			else if (strcmp(argument, "-h") == 0)
+			{
+				outApplicationInfo.Height = std::atoi(arguments[++argumentIndex]);
+			}
+		}
+	}
+}
 
 int main(int argc, char** argv)
 {
-	RenderInfo renderInfo;
-	ParseCommandlineArguments(renderInfo, argc, argv);
-	if (renderInfo.ModelPath.empty() == true)
+	iiixrlab::ApplicationInfo applicationInfo =
+	{
+		.Info =
+		{
+			.Name = "3D Gaussian Splatting Renderer",
+			.Version = IIIXRLAB_MAKE_API_VERSION(0, 0, 1, 0),
+		}
+	};
+
+	iiixrlab::ParseCommandlineArguments(applicationInfo, argc, argv);
+	if (applicationInfo.ModelPath.empty() == true)
 	{
 		std::cout << "Model path is empty!! Please provide a model path with -m <file-path>!!" << std::endl;
 		assert(false);
 		return -1;
 	}
 
-	std::ifstream modelFile(renderInfo.ModelPath);
-	if (modelFile.is_open() == false)
+	iiixrlab::Window window(applicationInfo);
+
+	iiixrlab::ProjectInfo engineInfo =
 	{
-		std::cout << "Unable to open file " << renderInfo.ModelPath << "!! Check if the path is valid!!" << std::endl;
-		assert(false);
-		return -1;
+		.Name = "3DGS Renderer Engine",
+		.Version = IIIXRLAB_MAKE_API_VERSION(0, 0, 1, 0),
+	};
+
+	iiixrlab::RendererCreateInfo createInfo =
+	{
+		.ApplicationInfo = applicationInfo.Info,
+		.EngineInfo = engineInfo,
+		.FramesCount = 3,
+		.Window = window,
+	};
+
+	iiixrlab::Renderer renderer(createInfo);
+	
+	iiixrlab::Scene scene(applicationInfo.ModelPath);
+
+	bool bQuitApplication = false;
+	while (bQuitApplication == false)
+	{
+		const bool bHasEvents = window.HandleEvents(bQuitApplication);
+		if (bHasEvents == false)
+		{
+			renderer.Render();
+		}
 	}
 
 	return 0;
-}
-
-void LoadModel(const std::filesystem::path& modelPath)
-{
-	const std::filesystem::path extension = modelPath.extension();
-	if (extension == ".ply")
-	{
-		std::cout << "Loading ply files is not yet implemented!!" << std::endl;
-		assert(false);
-		return;
-	}
-	else if (extension == ".spz")
-	{
-		spz::GaussianCloud gaussianCloud = spz::loadSpz(modelPath.string());
-
-		return;
-	}
-
-	std::cout << "Invalid file extension " << extension << "!!" << std::endl;
-	assert(false);
-}
-
-void ParseCommandlineArguments(RenderInfo& outRenderInfo, const uint32_t numArguments, char** arguments)
-{
-	for (uint32_t argumentIndex = 1; argumentIndex < numArguments; ++argumentIndex)
-	{
-		const char* argument = arguments[argumentIndex];
-		std::cout << argument << '\n';
-
-		if (strcmp(argument, "-m") == 0)
-		{
-			outRenderInfo.ModelPath = arguments[++argumentIndex];
-		}
-	}
 }
