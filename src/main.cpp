@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#include "3dgs/Renderer.h"
+#include "3dgs/graphics/Renderer.h"
 #include "3dgs/Scene.h"
 #include "3dgs/Window.h"
 
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 		.Version = IIIXRLAB_MAKE_API_VERSION(0, 0, 1, 0),
 	};
 
-	iiixrlab::RendererCreateInfo createInfo =
+	iiixrlab::graphics::RendererCreateInfo createInfo =
 	{
 		.ApplicationInfo = applicationInfo.Info,
 		.EngineInfo = engineInfo,
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 		.Window = window,
 	};
 
-	iiixrlab::Renderer renderer(createInfo);
+	iiixrlab::graphics::Renderer renderer(createInfo);
 	
 	iiixrlab::Scene scene(applicationInfo.ModelPath);
 

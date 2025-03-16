@@ -13,6 +13,7 @@ file(
     ${PROJECT_SOURCE_DIR}/src/*.cpp 
     ${PROJECT_SOURCE_DIR}/src/*.h 
     ${PROJECT_SOURCE_DIR}/src/*.hpp
+    ${PROJECT_SOURCE_DIR}/3dgs/graphics/*.hpp
     )
 file(GLOB_RECURSE SPZ_SOURCES ${PROJECT_SOURCE_DIR}/external/spz/src/cc/*.cc)
 

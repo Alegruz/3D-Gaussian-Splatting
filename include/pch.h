@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <memory>
 #include <string>
 
 // SPZ
