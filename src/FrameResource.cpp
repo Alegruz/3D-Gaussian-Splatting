@@ -3,6 +3,7 @@
 #include "3dgs/graphics/CommandBuffer.h"
 #include "3dgs/graphics/Device.hpp"
 #include "3dgs/graphics/Renderer.h"
+#include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
 
 namespace iiixrlab::graphics
@@ -54,30 +55,7 @@ namespace iiixrlab::graphics
 	void FrameResource::Begin() noexcept
 	{
 		mCommandBuffer.Reset();
-		mCommandBuffer.Begin();
-
-		// VkImageSubresourceRange imageSubresourceRange =
-		// {
-		// 	.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-		// 	.baseMipLevel = 0,
-		// 	.levelCount = 1,
-		// 	.baseArrayLayer = 0,
-		// 	.layerCount = 1,
-		// };
-
-		// VkImageMemoryBarrier presentToClearBarrier =
-		// {
-		// 	.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		// 	.pNext = nullptr,
-		// 	.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT,
-		// 	.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-		// 	.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-		// 	.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		// 	.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		// 	.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		// 	.image = mBackBuffer,
-		// 	.subresourceRange = imageSubresourceRange,
-		// };
+		mCommandBuffer.Begin(*this);
 	}
 
 	void FrameResource::End() noexcept

@@ -9,6 +9,7 @@ namespace iiixrlab::graphics
 	class CommandPool;
 	class PhysicalDevice;
 	class Queue;
+	class Shader;
 	class SwapChain;
 	class Texture;
 
@@ -52,19 +53,28 @@ namespace iiixrlab::graphics
 
 		uint32_t AcquireNextImage(const SwapChain& swapChain, const VkSemaphore semaphore, const VkFence fence) noexcept;
 		VkCommandBuffer AllocateCommandBuffer(const char* name) noexcept;
+		VkDescriptorSetLayout CreateDescriptorSetLayout(const char* name, const std::vector<VkDescriptorSetLayoutBinding>& descriptorSetLayoutBindings) noexcept;
 		VkImageView CreateImageView(const char* name, const VkImage image, const VkFormat format, const uint8_t usage) noexcept;
 		VkFence CreateFence(const char* name) noexcept;
+		VkPipeline CreatePipeline(const char* name, const std::vector<std::unique_ptr<Shader>>& shaders, VkPipelineLayout pipelineLayout, const Texture& colorAttachment, const Texture& depthAttachment) noexcept;
+		VkPipelineLayout CreatePipelineLayout(const char* name, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) noexcept;
+		VkShaderModule CreateShaderModule(const char* name, const std::filesystem::path& path) noexcept;
 		VkSemaphore CreateSemaphore(const char* name) noexcept;
 		std::unique_ptr<Texture> CreateTexture(const TextureCreateInfo& textureCreateInfo) noexcept;
 		void DestroyCommandBuffer(VkCommandBuffer& commandBuffer) noexcept;
 		void DestroyCommandPool(VkCommandPool& commandPool) noexcept;
+		void DestroyDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout) noexcept;
 		void DestroyFence(VkFence& fence) noexcept;
 		void DestroyImage(VkImage& image) noexcept;
 		void DestroyImageView(VkImageView& imageView) noexcept;
+		void DestroyPipeline(VkPipeline& pipeline) noexcept;
+		void DestroyPipelineLayout(VkPipelineLayout& pipelineLayout) noexcept;
 		void DestroySemaphore(VkSemaphore& semaphore) noexcept;
+		void DestroyShaderModule(VkShaderModule& shaderModule) noexcept;
 		void DestroySwapChain(VkSwapchainKHR& swapChain) noexcept;
 		void FreeMemory(VkDeviceMemory& deviceMemory) noexcept;
 		CommandPool& InitializeCommandPool() noexcept;
+		void InitializeDescriptors() noexcept;
 		void ResetFence(VkFence& fence) noexcept;
 		void WaitForFence(VkFence& fence) noexcept;
 
@@ -85,5 +95,6 @@ namespace iiixrlab::graphics
 
 		std::vector<std::unique_ptr<Queue>> mQueues;
 		std::unique_ptr<CommandPool> mCommandPool;
+		VkDescriptorPool mDescriptorPool;
 	};
 } // namespace iiixrlab::graphics

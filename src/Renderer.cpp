@@ -7,6 +7,7 @@
 #include "3dgs/graphics/Instance.h"
 #include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/Queue.h"
+#include "3dgs/graphics/Shader.h"
 #include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
 #include "3dgs/Window.h"
@@ -42,11 +43,23 @@ namespace iiixrlab::graphics
 			};
 			mFrameResources.push_back(std::make_unique<FrameResource>(frameResourceCreateInfo));
 		}
+
+		mDescriptorSetLayout = device.CreateDescriptorSetLayout("DescriptorSetLayout", {});
+		mPipelineLayout = device.CreatePipelineLayout("PipelineLayout", {mDescriptorSetLayout});
+		std::vector<std::unique_ptr<Shader>> shaders;
+		shaders.resize(static_cast<size_t>(Shader::eType::COUNT));
+		mPipeline = device.CreatePipeline("Pipeline", shaders, mPipelineLayout, *swapChain.GetBackBuffer(0).Color, *swapChain.GetBackBuffer(0).Depth);
 	}
 
 	Renderer::~Renderer() noexcept
 	{
 		mFrameResources.clear();
+
+		Device& device = mInstance->GetPhysicalDevice().GetDevice();
+		device.DestroyPipeline(mPipeline);
+		device.DestroyPipelineLayout(mPipelineLayout);
+		device.DestroyDescriptorSetLayout(mDescriptorSetLayout);
+
 		mInstance.reset();
 	}
 
@@ -62,6 +75,11 @@ namespace iiixrlab::graphics
 		mCurrentFrameIndex = imageIndex;
 
 		currentFrameResource.Begin();
+
+		CommandBuffer& commandBuffer = currentFrameResource.GetCommandBuffer();
+		// commandBuffer.BindDescriptorSets(mPipelineLayout);
+		commandBuffer.BindPipeline(mPipeline);
+
 		currentFrameResource.End();
 
 		Queue& queue = device.GetQueue();

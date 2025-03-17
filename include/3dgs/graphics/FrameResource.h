@@ -39,6 +39,7 @@ namespace iiixrlab::graphics
 		void End() noexcept;
 		void Wait() noexcept;
 
+		IIIXRLAB_INLINE constexpr const SwapChain& GetSwapChain() const noexcept { return mSwapChain; }
 		IIIXRLAB_INLINE constexpr CommandBuffer& GetCommandBuffer() noexcept { return mCommandBuffer; }
 		IIIXRLAB_INLINE constexpr const CommandBuffer& GetCommandBuffer() const noexcept { return mCommandBuffer; }
 		IIIXRLAB_INLINE constexpr VkSemaphore GetPresentCompleteSemaphore() const noexcept { return mPresentCompleteSemaphore; }
@@ -46,6 +47,10 @@ namespace iiixrlab::graphics
 		IIIXRLAB_INLINE constexpr VkFence GetWaitFence() const noexcept { return mWaitFence; }
 		IIIXRLAB_INLINE constexpr uint32_t GetFrameIndex() const noexcept { return mFrameIndex; }
 		IIIXRLAB_INLINE constexpr uint32_t GetFramesCount() const noexcept { return mFramesCount; }
+		IIIXRLAB_INLINE constexpr Texture& GetBackBuffer() noexcept { return mBackBuffer; }
+		IIIXRLAB_INLINE constexpr const Texture& GetBackBuffer() const noexcept { return mBackBuffer; }
+		IIIXRLAB_INLINE constexpr Texture& GetDepthBuffer() noexcept { return mDepthBuffer; }
+		IIIXRLAB_INLINE constexpr const Texture& GetDepthBuffer() const noexcept { return mDepthBuffer; }
 
 	private:
 		Device&			mDevice;

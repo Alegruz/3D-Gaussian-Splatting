@@ -4,6 +4,7 @@
 #include "3dgs/graphics/Instance.h"
 #include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/Queue.h"
+#include "3dgs/graphics/Shader.h"
 #include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
 
@@ -12,6 +13,9 @@ namespace iiixrlab::graphics
 	Device::Device(CreateInfo& createInfo) noexcept
 		: mPhysicalDevice(createInfo.PhysicalDevice)
 		, mDevice(createInfo.Device)
+		, mQueues()
+		, mCommandPool()
+		, mDescriptorPool(VK_NULL_HANDLE)
 	{
 		assert(mDevice != VK_NULL_HANDLE);
 
@@ -40,6 +44,12 @@ namespace iiixrlab::graphics
 			queue->Wait();
 		}
 
+		if (mDescriptorPool != VK_NULL_HANDLE)
+		{
+			vkDestroyDescriptorPool(mDevice, mDescriptorPool, nullptr);
+			mDescriptorPool = VK_NULL_HANDLE;
+		}
+
 		mCommandPool->FreeCommandBuffers();
 		mCommandPool.reset();
 		mQueues.clear();
@@ -65,6 +75,249 @@ namespace iiixrlab::graphics
 #endif	// defined(_DEBUG)
 
 		return fence;
+	}
+
+	VkPipeline Device::CreatePipeline(const char* name, const std::vector<std::unique_ptr<Shader>>& shaders, VkPipelineLayout pipelineLayout, const Texture& colorAttachment, const Texture& depthAttachment) noexcept
+	{
+		VkResult vr = VK_SUCCESS;
+		assert(name != nullptr);
+		VkPipeline pipeline = VK_NULL_HANDLE;
+
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
+		for (const std::unique_ptr<Shader>& shader : shaders)
+		{
+			if (shader == nullptr)
+			{
+				continue;
+			}
+
+			VkPipelineShaderStageCreateInfo shaderStageCreateInfo =
+			{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.pNext = nullptr,
+				.flags = 0,
+				.module = shader->GetShaderModule(),
+				.pName = shader->GetEntryPoint().c_str(),
+			};
+
+			switch (shader->GetType())
+			{
+			case Shader::eType::VERTEX:
+				shaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+				break;
+			case Shader::eType::TESSELLATION_CONTROL:
+				shaderStageCreateInfo.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+				break;
+			case Shader::eType::TESSELLATION_EVALUATION:
+				shaderStageCreateInfo.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+				break;
+			case Shader::eType::GEOMETRY:
+				shaderStageCreateInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+				break;
+			case Shader::eType::FRAGMENT:
+				shaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+				break;
+			case Shader::eType::COMPUTE:
+				shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+				break;
+			default:
+				assert(false);
+				break;
+			}
+			shaderStageCreateInfos.push_back(shaderStageCreateInfo);
+		}
+
+		VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.vertexBindingDescriptionCount = 0,
+			.pVertexBindingDescriptions = nullptr,
+			.vertexAttributeDescriptionCount = 0,
+			.pVertexAttributeDescriptions = nullptr,
+		};
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+			.primitiveRestartEnable = VK_FALSE,
+		};
+
+		VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+			.viewportCount = 1,
+			.scissorCount = 1,
+		};
+
+		VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.depthClampEnable = VK_FALSE,
+			.rasterizerDiscardEnable = VK_FALSE,
+			.polygonMode = VK_POLYGON_MODE_FILL,
+			.cullMode = VK_CULL_MODE_BACK_BIT,
+			.frontFace = VK_FRONT_FACE_CLOCKWISE,
+			.depthBiasEnable = VK_FALSE,
+			.lineWidth = 1.0f,
+		};
+
+		VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+			.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+		};
+
+		VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.depthTestEnable = VK_TRUE,
+			.depthWriteEnable = VK_TRUE,
+			.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.depthBoundsTestEnable = VK_FALSE,
+			.stencilTestEnable = VK_FALSE,
+			.front = VkStencilOpState
+			{
+				.failOp = VK_STENCIL_OP_KEEP,
+				.passOp = VK_STENCIL_OP_KEEP,
+				.compareOp = VK_COMPARE_OP_ALWAYS,
+			},
+			.back = VkStencilOpState
+			{
+				.failOp = VK_STENCIL_OP_KEEP,
+				.passOp = VK_STENCIL_OP_KEEP,
+				.compareOp = VK_COMPARE_OP_ALWAYS,
+			},
+			.minDepthBounds = 0.0f,
+			.maxDepthBounds = 1.0f,
+		};
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachmentState =
+		{
+			.blendEnable = VK_FALSE,
+			.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+		};
+
+		VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+			.attachmentCount = 1,
+			.pAttachments = &colorBlendAttachmentState,
+		};
+
+		std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+			.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size()),
+			.pDynamicStates = dynamicStateEnables.data(),
+		};
+
+		VkFormat colorAttachmentFormat = colorAttachment.GetFormat();
+		VkFormat depthAttachmentFormat = depthAttachment.GetFormat();
+		VkPipelineRenderingCreateInfo renderingCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+			.colorAttachmentCount = 1,
+			.pColorAttachmentFormats = &colorAttachmentFormat,
+			.depthAttachmentFormat = depthAttachmentFormat,
+			.stencilAttachmentFormat = depthAttachmentFormat,
+		};
+
+		VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+			.pNext = &renderingCreateInfo,
+			.flags = 0,
+			.stageCount = static_cast<uint32_t>(shaderStageCreateInfos.size()),
+			.pStages = shaderStageCreateInfos.data(),
+			.pVertexInputState = &vertexInputStateCreateInfo,
+			.pInputAssemblyState = &inputAssemblyStateCreateInfo,
+			.pTessellationState = nullptr,
+			.pViewportState = &viewportStateCreateInfo,
+			.pRasterizationState = &rasterizationStateCreateInfo,
+			.pMultisampleState = &multisampleStateCreateInfo,
+			.pDepthStencilState = &depthStencilStateCreateInfo,
+			.pColorBlendState = &colorBlendStateCreateInfo,
+			.pDynamicState = &dynamicStateCreateInfo,
+			.layout = pipelineLayout,
+			.renderPass = VK_NULL_HANDLE,
+			.subpass = 0,
+			.basePipelineHandle = VK_NULL_HANDLE,
+			.basePipelineIndex = 0,
+		};
+
+		vr = vkCreateGraphicsPipelines(mDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
+		assert(vr == VK_SUCCESS && pipeline != VK_NULL_HANDLE);
+#if defined(_DEBUG)
+		SetDebugName(name, VK_OBJECT_TYPE_PIPELINE, pipeline);
+#endif	// defined(_DEBUG)
+
+		return pipeline;
+	}
+
+	VkPipelineLayout Device::CreatePipelineLayout(const char* name, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) noexcept
+	{
+		VkResult vr = VK_SUCCESS;
+		assert(name != nullptr);
+		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
+			.pSetLayouts = descriptorSetLayouts.data(),
+			.pushConstantRangeCount = 0,
+			.pPushConstantRanges = nullptr,
+		};
+		vr = vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+		assert(vr == VK_SUCCESS && pipelineLayout != VK_NULL_HANDLE);
+#if defined(_DEBUG)
+		SetDebugName(name, VK_OBJECT_TYPE_PIPELINE_LAYOUT, pipelineLayout);
+#endif	// defined(_DEBUG)
+
+		return pipelineLayout;
+	}
+
+	VkShaderModule Device::CreateShaderModule(const char* name, const std::filesystem::path& path) noexcept
+	{
+		VkResult vr = VK_SUCCESS;
+		assert(name != nullptr);
+		VkShaderModule shaderModule = VK_NULL_HANDLE;
+
+		std::ifstream file(path, std::ios::ate | std::ios::binary);
+		assert(file.is_open());
+
+		const size_t fileSize = static_cast<size_t>(file.tellg());
+		std::vector<char> buffer(fileSize);
+		file.seekg(0);
+		file.read(buffer.data(), fileSize);
+		file.close();
+
+		VkShaderModuleCreateInfo shaderModuleCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.codeSize = buffer.size(),
+			.pCode = reinterpret_cast<const uint32_t*>(buffer.data()),
+		};
+		vr = vkCreateShaderModule(mDevice, &shaderModuleCreateInfo, nullptr, &shaderModule);
+		assert(vr == VK_SUCCESS && shaderModule != VK_NULL_HANDLE);
+#if defined(_DEBUG)
+		SetDebugName(name, VK_OBJECT_TYPE_SHADER_MODULE, shaderModule);
+#endif	// defined(_DEBUG)
+
+		return shaderModule;
 	}
 
 	uint32_t Device::AcquireNextImage(const SwapChain& swapChain, const VkSemaphore semaphore, const VkFence fence) noexcept
@@ -100,6 +353,28 @@ namespace iiixrlab::graphics
 #endif	// defined(_DEBUG)
 
 		return commandBuffer;
+	}
+
+	VkDescriptorSetLayout Device::CreateDescriptorSetLayout(const char* name, const std::vector<VkDescriptorSetLayoutBinding>& descriptorSetLayoutBindings) noexcept
+	{
+		VkResult vr = VK_SUCCESS;
+		assert(name != nullptr);
+		VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.bindingCount = static_cast<uint32_t>(descriptorSetLayoutBindings.size()),
+			.pBindings = descriptorSetLayoutBindings.data(),
+		};
+		vr = vkCreateDescriptorSetLayout(mDevice, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout);
+		assert(vr == VK_SUCCESS && descriptorSetLayout != VK_NULL_HANDLE);
+#if defined(_DEBUG)
+		SetDebugName(name, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, descriptorSetLayout);
+#endif	// defined(_DEBUG)
+
+		return descriptorSetLayout;
 	}
 
 	VkImageView Device::CreateImageView(const char* name, const VkImage image, const VkFormat format, const uint8_t usage) noexcept
@@ -290,6 +565,15 @@ namespace iiixrlab::graphics
 		}
 	}
 
+	void Device::DestroyDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout) noexcept
+	{
+		if (descriptorSetLayout != VK_NULL_HANDLE)
+		{
+			vkDestroyDescriptorSetLayout(mDevice, descriptorSetLayout, nullptr);
+			descriptorSetLayout = VK_NULL_HANDLE;
+		}
+	}
+
 	void Device::DestroyFence(VkFence& fence) noexcept
 	{
 		if (fence != VK_NULL_HANDLE)
@@ -317,12 +601,39 @@ namespace iiixrlab::graphics
 		}
 	}
 
+	void Device::DestroyPipeline(VkPipeline& pipeline) noexcept
+	{
+		if (pipeline != VK_NULL_HANDLE)
+		{
+			vkDestroyPipeline(mDevice, pipeline, nullptr);
+			pipeline = VK_NULL_HANDLE;
+		}
+	}
+
+	void Device::DestroyPipelineLayout(VkPipelineLayout& pipelineLayout) noexcept
+	{
+		if (pipelineLayout != VK_NULL_HANDLE)
+		{
+			vkDestroyPipelineLayout(mDevice, pipelineLayout, nullptr);
+			pipelineLayout = VK_NULL_HANDLE;
+		}
+	}
+
 	void Device::DestroySemaphore(VkSemaphore& semaphore) noexcept
 	{
 		if (semaphore != VK_NULL_HANDLE)
 		{
 			vkDestroySemaphore(mDevice, semaphore, nullptr);
 			semaphore = VK_NULL_HANDLE;
+		}
+	}
+
+	void Device::DestroyShaderModule(VkShaderModule& shaderModule) noexcept
+	{
+		if (shaderModule != VK_NULL_HANDLE)
+		{
+			vkDestroyShaderModule(mDevice, shaderModule, nullptr);
+			shaderModule = VK_NULL_HANDLE;
 		}
 	}
 
@@ -369,6 +680,31 @@ namespace iiixrlab::graphics
 #endif	// defined(_DEBUG)
 		mCommandPool = std::make_unique<CommandPool>(commandPoolCreateInfo);
 		return *mCommandPool;
+	}
+
+	void Device::InitializeDescriptors() noexcept
+	{
+		VkResult vr = VK_SUCCESS;
+		const uint32_t framesCount = mPhysicalDevice.GetInstance().GetSwapChain().GetFramesCount();
+
+		VkDescriptorPoolSize descriptorPoolSize =
+		{
+			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorCount = framesCount,
+		};
+
+		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			.maxSets = framesCount,
+			.poolSizeCount = 1,
+			.pPoolSizes = &descriptorPoolSize,
+		};
+
+		vr = vkCreateDescriptorPool(mDevice, &descriptorPoolCreateInfo, nullptr, &mDescriptorPool);
+		assert(vr == VK_SUCCESS && mDescriptorPool != VK_NULL_HANDLE);
 	}
 
 	void Device::ResetFence(VkFence& fence) noexcept

@@ -46,6 +46,7 @@ namespace iiixrlab::graphics
 
 		IIIXRLAB_INLINE constexpr uint32_t GetFramesCount() const noexcept { return mFramesCount; }
 		IIIXRLAB_INLINE constexpr const BackBuffer& GetBackBuffer(const uint32_t index) const noexcept { return mBackBuffers[index]; }
+		IIIXRLAB_INLINE constexpr VkExtent2D GetExtent() const noexcept { return mFrameExtent; }
 
 	private:
 		Instance&		mInstance;
