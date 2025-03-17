@@ -13,3 +13,9 @@ CMakeUserPresets.json
 .vscode/
 build/
 external/zlib/build/
+external/slang/cmake/
+external/slang/share/
+external/slang/bin/*.pdb
+external/slang/bin/*.exe
+external/slang/bin/slang-glsl-module.dll
+external/slang/bin/slang-glslang.dll

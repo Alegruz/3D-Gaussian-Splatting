@@ -28,6 +28,7 @@ target_include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/external/spz/src/cc
     ${PROJECT_SOURCE_DIR}/external/zlib
+    ${PROJECT_SOURCE_DIR}/external/slang/include
     )
 
 target_sources(3D-Gaussian-Splatting PRIVATE ${SOURCES})
@@ -52,7 +53,32 @@ add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
 )
 endif()
 
-target_link_libraries(3D-Gaussian-Splatting PRIVATE zlib)
+add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${PROJECT_SOURCE_DIR}/external/slang/bin/slang-rt.dll
+    $<TARGET_FILE_DIR:3D-Gaussian-Splatting>
+)
+
+add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${PROJECT_SOURCE_DIR}/external/slang/bin/slang.dll
+    $<TARGET_FILE_DIR:3D-Gaussian-Splatting>
+)
+
+add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${PROJECT_SOURCE_DIR}/external/slang/bin/gfx.dll
+    $<TARGET_FILE_DIR:3D-Gaussian-Splatting>
+)
+
+add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${PROJECT_SOURCE_DIR}/external/slang/bin/slang-llvm.dll
+    $<TARGET_FILE_DIR:3D-Gaussian-Splatting>
+)
+
+target_link_directories(3D-Gaussian-Splatting PRIVATE ${PROJECT_SOURCE_DIR}/external/slang/lib)
+target_link_libraries(3D-Gaussian-Splatting PRIVATE zlib gfx.lib slang.lib slang-rt.lib)
 
 target_compile_definitions(3D-Gaussian-Splatting PRIVATE _USE_MATH_DEFINES)
 
