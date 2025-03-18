@@ -8,6 +8,7 @@
 #include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/Queue.h"
 #include "3dgs/graphics/Shader.h"
+#include "3dgs/graphics/ShaderManager.h"
 #include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
 #include "3dgs/Window.h"
@@ -44,11 +45,28 @@ namespace iiixrlab::graphics
 			mFrameResources.push_back(std::make_unique<FrameResource>(frameResourceCreateInfo));
 		}
 
+		ShaderManager& shaderManager = ShaderManager::GetInstance();
+		Shader::CreateInfo vsCreateInfo =
+		{
+			.Device = device,
+			.Path = "assets/shaders/TestShader.slang",
+			.EntryPoint = "VSMain",
+			.Type = Shader::eType::VERTEX,
+		};
+		shaderManager.AddShader(vsCreateInfo);
+		Shader::CreateInfo psCreateInfo =
+		{
+			.Device = device,
+			.Path = "assets/shaders/TestShader.slang",
+			.EntryPoint = "PSMain",
+			.Type = Shader::eType::FRAGMENT,
+		};
+		shaderManager.AddShader(psCreateInfo);
+
 		mDescriptorSetLayout = device.CreateDescriptorSetLayout("DescriptorSetLayout", {});
 		mPipelineLayout = device.CreatePipelineLayout("PipelineLayout", {mDescriptorSetLayout});
-		std::vector<std::unique_ptr<Shader>> shaders;
-		shaders.resize(static_cast<size_t>(Shader::eType::COUNT));
-		mPipeline = device.CreatePipeline("Pipeline", shaders, mPipelineLayout, *swapChain.GetBackBuffer(0).Color, *swapChain.GetBackBuffer(0).Depth);
+		std::vector<std::string> shaderNames = {"TestShader_VSMain", "TestShader_PSMain"};
+		mPipeline = device.CreatePipeline("Pipeline", shaderNames, mPipelineLayout, *swapChain.GetBackBuffer(0).Color, *swapChain.GetBackBuffer(0).Depth);
 	}
 
 	Renderer::~Renderer() noexcept

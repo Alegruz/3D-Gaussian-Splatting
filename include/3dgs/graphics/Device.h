@@ -9,7 +9,6 @@ namespace iiixrlab::graphics
 	class CommandPool;
 	class PhysicalDevice;
 	class Queue;
-	class Shader;
 	class SwapChain;
 	class Texture;
 
@@ -56,7 +55,7 @@ namespace iiixrlab::graphics
 		VkDescriptorSetLayout CreateDescriptorSetLayout(const char* name, const std::vector<VkDescriptorSetLayoutBinding>& descriptorSetLayoutBindings) noexcept;
 		VkImageView CreateImageView(const char* name, const VkImage image, const VkFormat format, const uint8_t usage) noexcept;
 		VkFence CreateFence(const char* name) noexcept;
-		VkPipeline CreatePipeline(const char* name, const std::vector<std::unique_ptr<Shader>>& shaders, VkPipelineLayout pipelineLayout, const Texture& colorAttachment, const Texture& depthAttachment) noexcept;
+		VkPipeline CreatePipeline(const char* name, const std::vector<std::string>& shaderNames, VkPipelineLayout pipelineLayout, const Texture& colorAttachment, const Texture& depthAttachment) noexcept;
 		VkPipelineLayout CreatePipelineLayout(const char* name, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) noexcept;
 		VkShaderModule CreateShaderModule(const char* name, const std::filesystem::path& path) noexcept;
 		VkSemaphore CreateSemaphore(const char* name) noexcept;

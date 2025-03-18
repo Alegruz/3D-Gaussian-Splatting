@@ -5,6 +5,7 @@
 #include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/Queue.h"
 #include "3dgs/graphics/Shader.h"
+#include "3dgs/graphics/ShaderManager.h"
 #include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
 
@@ -77,30 +78,33 @@ namespace iiixrlab::graphics
 		return fence;
 	}
 
-	VkPipeline Device::CreatePipeline(const char* name, const std::vector<std::unique_ptr<Shader>>& shaders, VkPipelineLayout pipelineLayout, const Texture& colorAttachment, const Texture& depthAttachment) noexcept
+	VkPipeline Device::CreatePipeline(const char* name, const std::vector<std::string>& shaderNames, VkPipelineLayout pipelineLayout, const Texture& colorAttachment, const Texture& depthAttachment) noexcept
 	{
 		VkResult vr = VK_SUCCESS;
 		assert(name != nullptr);
 		VkPipeline pipeline = VK_NULL_HANDLE;
 
+		ShaderManager& shaderManager = ShaderManager::GetInstance();
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
-		for (const std::unique_ptr<Shader>& shader : shaders)
+		for (const std::string& shaderName : shaderNames)
 		{
-			if (shader == nullptr)
+			std::unique_ptr<Shader>* ppShader = shaderManager.GetShaderOrNull(shaderName);
+			if (ppShader == nullptr)
 			{
 				continue;
 			}
+			Shader& shader = **ppShader;
 
 			VkPipelineShaderStageCreateInfo shaderStageCreateInfo =
 			{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				.pNext = nullptr,
 				.flags = 0,
-				.module = shader->GetShaderModule(),
-				.pName = shader->GetEntryPoint().c_str(),
+				.module = shader.GetShaderModule(),
+				.pName = shader.GetEntryPoint().c_str(),
 			};
 
-			switch (shader->GetType())
+			switch (shader.GetType())
 			{
 			case Shader::eType::VERTEX:
 				shaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
