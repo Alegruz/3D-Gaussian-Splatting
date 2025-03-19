@@ -37,7 +37,7 @@ target_sources(3D-Gaussian-Splatting PRIVATE ${SOURCES})
 target_sources(3D-Gaussian-Splatting PRIVATE ${PROJECT_SOURCE_DIR}/src/pch.cpp)
 target_precompile_headers(3D-Gaussian-Splatting PRIVATE ${PROJECT_SOURCE_DIR}/include/pch.h)
 
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(3D-Gaussian-Splatting PRIVATE DEBUG)
     add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
