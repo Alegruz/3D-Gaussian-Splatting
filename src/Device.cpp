@@ -182,10 +182,10 @@ namespace iiixrlab::graphics
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 			.pNext = nullptr,
 			.flags = 0,
-			.vertexBindingDescriptionCount = 0,
-			.pVertexBindingDescriptions = nullptr,
-			.vertexAttributeDescriptionCount = 0,
-			.pVertexAttributeDescriptions = nullptr,
+			.vertexBindingDescriptionCount = static_cast<uint32_t>(pipelineCreateInfo.VertexInputBindingDescriptions.size()),
+			.pVertexBindingDescriptions = pipelineCreateInfo.VertexInputBindingDescriptions.data(),
+			.vertexAttributeDescriptionCount = static_cast<uint32_t>(pipelineCreateInfo.VertexInputAttributeDescriptions.size()),
+			.pVertexAttributeDescriptions = pipelineCreateInfo.VertexInputAttributeDescriptions.data(),
 		};
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo =
@@ -754,6 +754,12 @@ namespace iiixrlab::graphics
 
 		vr = vkCreateDescriptorPool(mDevice, &descriptorPoolCreateInfo, nullptr, &mDescriptorPool);
 		assert(vr == VK_SUCCESS && mDescriptorPool != VK_NULL_HANDLE);
+	}
+
+	void Device::MapMemory(Buffer& buffer, void** data) noexcept
+	{
+		VkResult vr = vkMapMemory(mDevice, buffer.mBufferMemory, 0, buffer.GetSize(), 0, data);
+		assert(vr == VK_SUCCESS);
 	}
 
 	void Device::ResetFence(VkFence& fence) noexcept

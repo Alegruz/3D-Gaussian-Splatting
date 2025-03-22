@@ -30,10 +30,15 @@ namespace iiixrlab::graphics
 		}
 		Pipeline& pipeline = *pipelineFindResult->second;
 		commandBuffer.Bind(pipeline);
-		commandBuffer.Draw(3, 1, 0, 0);
+		commandBuffer.Bind(*mVertexBuffer);
+		for (const auto& renderable : GetRenderables())
+		{
+			const iiixrlab::scene::GaussianInfo& gaussianInfo = renderable->GetGaussianInfo();
+			commandBuffer.Draw(3, gaussianInfo.NumPoints, 0, 0);
+		}
 	}
 
-	void GaussianRenderScene::Update(CommandBuffer& commandBuffer) noexcept
+	void GaussianRenderScene::updateInner(CommandBuffer& commandBuffer) noexcept
 	{
 		if (mVertexBuffer == nullptr)
 		{
@@ -41,7 +46,7 @@ namespace iiixrlab::graphics
 			for (const auto& renderable : GetRenderables())
 			{
 				const iiixrlab::scene::GaussianInfo& gaussianInfo = renderable->GetGaussianInfo();
-				vertexBufferSize += gaussianInfo.NumPoints * 3 * sizeof(float) * 3;
+				vertexBufferSize += gaussianInfo.NumPoints * 3 * sizeof(float);
 			}
 			mVertexBuffer = mDevice.CreateVertexBuffer("GaussianVertexBuffer", vertexBufferSize);
 		}
@@ -49,8 +54,7 @@ namespace iiixrlab::graphics
 		for (const auto& renderable : GetRenderables())
 		{
 			[[maybe_unused]] const iiixrlab::scene::GaussianInfo& gaussianInfo = renderable->GetGaussianInfo();
-			const StagingBuffer& stagingBuffer = renderable->GetStagingBuffer();
-
+			StagingBuffer& stagingBuffer = renderable->GetStagingBuffer();
 			commandBuffer.CopyBuffer(stagingBuffer, *mVertexBuffer, { .srcOffset = 0, .dstOffset = 0, .size = stagingBuffer.GetSize() });
 		}
 	}

@@ -34,10 +34,12 @@ namespace iiixrlab::graphics
 		virtual ~IRenderScene() noexcept;
 
 		virtual void Render(CommandBuffer& commandBuffer) noexcept = 0;
-		virtual void Update(CommandBuffer& commandBuffer) noexcept = 0;
+		IIIXRLAB_INLINE void Update(CommandBuffer& commandBuffer) noexcept { update(commandBuffer); }
 
 	protected:
 		IRenderScene(CreateInfo& createInfo) noexcept;
+
+		virtual void update(CommandBuffer& commandBuffer) noexcept = 0;
 
 	protected:
 		Device& mDevice;
@@ -63,6 +65,10 @@ namespace iiixrlab::graphics
 		IIIXRLAB_INLINE constexpr const std::vector<std::unique_ptr<TRenderable>>& GetRenderables() const noexcept { return mRenderables; }
 		
 		constexpr void AddRenderable(std::unique_ptr<TRenderable>&& renderable) noexcept;
+
+	protected:
+		void update(CommandBuffer& commandBuffer) noexcept override final;
+		virtual void updateInner(CommandBuffer& commandBuffer) noexcept = 0;
 		
 	private:
 		std::vector<std::unique_ptr<TRenderable>> mRenderables;

@@ -8,6 +8,7 @@
 #include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
+#include "3dgs/graphics/VertexBuffer.h"
 
 namespace iiixrlab::graphics
 {
@@ -176,6 +177,13 @@ namespace iiixrlab::graphics
 	void CommandBuffer::Bind(const Pipeline& pipeline) noexcept
 	{
 		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.mPipeline);
+	}
+
+	void CommandBuffer::Bind(const VertexBuffer& vertexBuffer) noexcept
+	{
+		VkBuffer vertexBuffers[] = {vertexBuffer.mBuffer};
+		VkDeviceSize offsets[] = {0};
+		vkCmdBindVertexBuffers(mCommandBuffer, 0, 1, vertexBuffers, offsets);
 	}
 
 	void CommandBuffer::CopyBuffer(const Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy) noexcept

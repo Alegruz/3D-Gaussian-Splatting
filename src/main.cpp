@@ -108,6 +108,23 @@ int main(int argc, char** argv)
 		iiixrlab::graphics::PipelineCreateInfo pipelineCreateInfo =
 		{
 			.Name = "GaussianPipeline",
+			.VertexInputBindingDescriptions =
+			{
+				{
+					.binding = 0,
+					.stride = 3 * sizeof(float),
+					.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE,
+				},
+			},
+			.VertexInputAttributeDescriptions =
+			{
+				{
+					.location = 0,
+					.binding = 0,
+					.format = VK_FORMAT_R32G32B32_SFLOAT,
+					.offset = 0,
+				},
+			},
 			.DescriptorSetLayoutBindings =
 			{
 				{

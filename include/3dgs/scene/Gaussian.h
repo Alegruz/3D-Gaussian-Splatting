@@ -7,6 +7,7 @@
 namespace iiixrlab::scene
 {
     class iiixrlab::graphics::Device;
+    class iiixrlab::graphics::CommandBuffer;
     
     class Gaussian final : public iiixrlab::graphics::IRenderable
     {
@@ -34,10 +35,7 @@ namespace iiixrlab::scene
         IIIXRLAB_INLINE const GaussianInfo& GetGaussianInfo() const noexcept { return mGaussianInfo; }
 
     protected:
-        IIIXRLAB_INLINE Gaussian(iiixrlab::graphics::IRenderable::CreateInfo& createInfo, const GaussianInfo& gaussianInfo) noexcept
-            : iiixrlab::graphics::IRenderable(createInfo)
-            , mGaussianInfo(gaussianInfo)
-        {}
+        Gaussian(iiixrlab::graphics::IRenderable::CreateInfo& createInfo, const GaussianInfo& gaussianInfo) noexcept;
 
     private:
         const GaussianInfo& mGaussianInfo;

@@ -23,6 +23,8 @@ namespace iiixrlab::graphics
 		~GaussianRenderScene() noexcept;
         
 		void Render(CommandBuffer& commandBuffer) noexcept override;
-		void Update(CommandBuffer& commandBuffer) noexcept override;
+	
+	protected:
+        void updateInner(iiixrlab::graphics::CommandBuffer& commandBuffer) noexcept;
 	};
 } // namespace iiixrlab::graphics

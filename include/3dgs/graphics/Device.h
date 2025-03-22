@@ -6,6 +6,7 @@ namespace iiixrlab::graphics
 {
 #undef CreateSemaphore
 
+	class Buffer;
 	class CommandPool;
 	class Pipeline;
 	class PhysicalDevice;
@@ -18,6 +19,8 @@ namespace iiixrlab::graphics
 	struct PipelineCreateInfo final
 	{
 		const char* Name;
+		std::vector<VkVertexInputBindingDescription> VertexInputBindingDescriptions;
+		std::vector<VkVertexInputAttributeDescription> VertexInputAttributeDescriptions;
 		std::vector<VkDescriptorSetLayoutBinding> DescriptorSetLayoutBindings;
 		std::vector<std::string> ShaderNames;
 		VkPipelineLayout PipelineLayout;
@@ -89,6 +92,7 @@ namespace iiixrlab::graphics
 		void FreeMemory(VkDeviceMemory& deviceMemory) noexcept;
 		CommandPool& InitializeCommandPool() noexcept;
 		void InitializeDescriptors() noexcept;
+		void MapMemory(Buffer& buffer, void** data) noexcept;
 		void ResetFence(VkFence& fence) noexcept;
 		void WaitForFence(VkFence& fence) noexcept;
 

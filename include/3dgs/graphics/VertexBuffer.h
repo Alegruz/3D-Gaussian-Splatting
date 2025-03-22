@@ -9,6 +9,7 @@ namespace iiixrlab::graphics
     class VertexBuffer final : public Buffer
     {
     public:
+		friend class CommandBuffer;
 		friend class Device;
 
 	public:

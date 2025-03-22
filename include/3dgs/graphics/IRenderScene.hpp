@@ -41,4 +41,15 @@ namespace iiixrlab::graphics
     {
         mRenderables.push_back(std::move(renderable));
     }
+
+	template<Renderable TRenderable>
+    IIIXRLAB_INLINE void TRenderScene<TRenderable>::update(CommandBuffer& commandBuffer) noexcept
+    {
+        for (auto& renderable : mRenderables)
+        {
+            renderable->Update(commandBuffer);
+        }
+
+        updateInner(commandBuffer);
+    }
 } // namespace iiixrlab::graphics
