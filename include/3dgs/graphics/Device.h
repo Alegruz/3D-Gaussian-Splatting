@@ -7,10 +7,23 @@ namespace iiixrlab::graphics
 #undef CreateSemaphore
 
 	class CommandPool;
+	class Pipeline;
 	class PhysicalDevice;
 	class Queue;
+	class StagingBuffer;
 	class SwapChain;
 	class Texture;
+	class VertexBuffer;
+
+	struct PipelineCreateInfo final
+	{
+		const char* Name;
+		std::vector<VkDescriptorSetLayoutBinding> DescriptorSetLayoutBindings;
+		std::vector<std::string> ShaderNames;
+		VkPipelineLayout PipelineLayout;
+		Texture& ColorAttachment;
+		Texture& DepthAttachment;
+	};
 
 	struct TextureCreateInfo final
 	{
@@ -53,14 +66,14 @@ namespace iiixrlab::graphics
 
 		uint32_t AcquireNextImage(const SwapChain& swapChain, const VkSemaphore semaphore, const VkFence fence) noexcept;
 		VkCommandBuffer AllocateCommandBuffer(const char* name) noexcept;
-		VkDescriptorSetLayout CreateDescriptorSetLayout(const char* name, const std::vector<VkDescriptorSetLayoutBinding>& descriptorSetLayoutBindings) noexcept;
 		VkImageView CreateImageView(const char* name, const VkImage image, const VkFormat format, const uint8_t usage) noexcept;
 		VkFence CreateFence(const char* name) noexcept;
-		VkPipeline CreatePipeline(const char* name, const std::vector<std::string>& shaderNames, VkPipelineLayout pipelineLayout, const Texture& colorAttachment, const Texture& depthAttachment) noexcept;
-		VkPipelineLayout CreatePipelineLayout(const char* name, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) noexcept;
+		std::unique_ptr<Pipeline> CreatePipeline(const PipelineCreateInfo& pipelineCreateInfo) noexcept;
 		VkShaderModule CreateShaderModule(const char* name, const std::filesystem::path& path) noexcept;
 		VkSemaphore CreateSemaphore(const char* name) noexcept;
+		std::unique_ptr<StagingBuffer> CreateStagingBuffer(const char* name, const uint32_t stagingBufferSize) noexcept;
 		std::unique_ptr<Texture> CreateTexture(const TextureCreateInfo& textureCreateInfo) noexcept;
+		std::unique_ptr<VertexBuffer> CreateVertexBuffer(const char* name, const uint32_t vertexBufferSize) noexcept;
 		void DestroyCommandBuffer(VkCommandBuffer& commandBuffer) noexcept;
 		void DestroyCommandPool(VkCommandPool& commandPool) noexcept;
 		void DestroyDescriptorSetLayout(VkDescriptorSetLayout& descriptorSetLayout) noexcept;
@@ -72,6 +85,7 @@ namespace iiixrlab::graphics
 		void DestroySemaphore(VkSemaphore& semaphore) noexcept;
 		void DestroyShaderModule(VkShaderModule& shaderModule) noexcept;
 		void DestroySwapChain(VkSwapchainKHR& swapChain) noexcept;
+		void DestroyBuffer(VkBuffer& vertexBuffer) noexcept;
 		void FreeMemory(VkDeviceMemory& deviceMemory) noexcept;
 		CommandPool& InitializeCommandPool() noexcept;
 		void InitializeDescriptors() noexcept;

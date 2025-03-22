@@ -1,7 +1,19 @@
 #include "pch.h"
 
+#include "3dgs/graphics/Device.h"
+#include "3dgs/graphics/GaussianRenderScene.h"
+#include "3dgs/graphics/Instance.h"
+#include "3dgs/graphics/IRenderScene.hpp"
+#include "3dgs/graphics/Pipeline.h"
+#include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/Renderer.h"
-#include "3dgs/Scene.h"
+#include "3dgs/graphics/Shader.h"
+#include "3dgs/graphics/ShaderManager.h"
+#include "3dgs/graphics/SwapChain.h"
+
+#include "3dgs/scene/Gaussian.h"
+#include "3dgs/scene/Scene.h"
+
 #include "3dgs/Window.h"
 
 namespace iiixrlab
@@ -63,8 +75,78 @@ int main(int argc, char** argv)
 	};
 
 	iiixrlab::graphics::Renderer renderer(createInfo);
+	iiixrlab::graphics::Instance& instance = renderer.GetInstance();
+	iiixrlab::graphics::SwapChain& swapChain = instance.GetSwapChain();
+	iiixrlab::graphics::PhysicalDevice& physicalDevice = instance.GetPhysicalDevice();
+	iiixrlab::graphics::Device& device = physicalDevice.GetDevice();
+
+	iiixrlab::scene::Scene scene(applicationInfo.ModelPath);
+
+	iiixrlab::graphics::ShaderManager& shaderManager = iiixrlab::graphics::ShaderManager::GetInstance();
+
+	std::vector<iiixrlab::graphics::Shader::CreateInfo> shaderCreateInfos =
+	{
+		iiixrlab::graphics::Shader::CreateInfo
+		{
+			.Device = device,
+			.Path = "assets/shaders/Gaussian.slang",
+			.EntryPoint = "VSMain",
+			.Type = iiixrlab::graphics::Shader::eType::VERTEX,
+		},
+		iiixrlab::graphics::Shader::CreateInfo
+		{
+			.Device = device,
+			.Path = "assets/shaders/Gaussian.slang",
+			.EntryPoint = "PSMain",
+			.Type = iiixrlab::graphics::Shader::eType::FRAGMENT,
+		},
+	};
+	shaderManager.AddShaders(shaderCreateInfos);
+
+	std::unique_ptr<iiixrlab::graphics::Pipeline> pipeline = nullptr;
+	{
+		iiixrlab::graphics::PipelineCreateInfo pipelineCreateInfo =
+		{
+			.Name = "GaussianPipeline",
+			.DescriptorSetLayoutBindings =
+			{
+				{
+					.binding = 0,
+					.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+					.descriptorCount = 1,
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+					.pImmutableSamplers = nullptr,
+				},
+			},
+			.ShaderNames = {"Gaussian_VSMain", "Gaussian_PSMain"},
+			.PipelineLayout = VK_NULL_HANDLE,
+			.ColorAttachment = *swapChain.GetBackBuffer(0).Color,
+			.DepthAttachment = *swapChain.GetBackBuffer(0).Depth,
+		};
+		
+		pipeline = device.CreatePipeline(pipelineCreateInfo);
+	}
+
+	std::unordered_map<std::string, std::unique_ptr<iiixrlab::graphics::Pipeline>> pipelines;
+	pipelines.reserve(1);
+	pipelines.insert(std::make_pair(pipeline->GetName(), std::move(pipeline)));
 	
-	iiixrlab::Scene scene(applicationInfo.ModelPath);
+	iiixrlab::graphics::IRenderScene::CreateInfo renderSceneCreateInfo =
+	{
+		.Device = device,
+		.Pipelines = std::move(pipelines),
+	};
+	std::unique_ptr<iiixrlab::graphics::GaussianRenderScene> gaussianRenderScene = std::make_unique<iiixrlab::graphics::GaussianRenderScene>(renderSceneCreateInfo);
+
+	iiixrlab::scene::Gaussian::CreateInfo gaussianCreateInfo =
+	{
+		.Device = renderer.GetInstance().GetPhysicalDevice().GetDevice(),
+		.GaussianInfo = scene.GetGaussianInfo(),
+	};
+	std::unique_ptr<iiixrlab::scene::Gaussian> gaussian = iiixrlab::scene::Gaussian::Create(gaussianCreateInfo);
+	gaussianRenderScene->AddRenderable(std::move(gaussian));
+
+	renderer.SetRenderScene(std::move(gaussianRenderScene));
 
 	bool bQuitApplication = false;
 	while (bQuitApplication == false)
@@ -72,6 +154,7 @@ int main(int argc, char** argv)
 		const bool bHasEvents = window.HandleEvents(bQuitApplication);
 		if (bHasEvents == false)
 		{
+			renderer.Update();
 			renderer.Render();
 		}
 	}

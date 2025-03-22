@@ -5,6 +5,7 @@
 #include "3dgs/graphics/Device.h"
 #include "3dgs/graphics/FrameResource.h"
 #include "3dgs/graphics/Instance.h"
+#include "3dgs/graphics/IRenderScene.hpp"
 #include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/Queue.h"
 #include "3dgs/graphics/Shader.h"
@@ -16,13 +17,10 @@
 namespace iiixrlab::graphics
 {
 	Renderer::Renderer(const RendererCreateInfo& createInfo) noexcept
-		: mInstance(std::make_unique<Instance>(Instance::CreateInfo{.ApplicationInfo = createInfo.ApplicationInfo, .EngineInfo = createInfo.EngineInfo}))
+		: mRenderScene()
+		, mInstance(std::make_unique<Instance>(Instance::CreateInfo{.ApplicationInfo = createInfo.ApplicationInfo, .EngineInfo = createInfo.EngineInfo}))
 		, mFrameResources()
 		, mCurrentFrameIndex(0)
-		, mPipelineLayout(VK_NULL_HANDLE)
-		, mPipeline(VK_NULL_HANDLE)
-		, mDescriptorSetLayout(VK_NULL_HANDLE)
-		, mDescriptorPool(VK_NULL_HANDLE)
 	{
 		Device& device = mInstance->GetPhysicalDevice().GetDevice();
 		SwapChain& swapChain = mInstance->InitializeSwapChain(createInfo.FramesCount, createInfo.Window);
@@ -44,52 +42,47 @@ namespace iiixrlab::graphics
 			};
 			mFrameResources.push_back(std::make_unique<FrameResource>(frameResourceCreateInfo));
 		}
-
-		ShaderManager& shaderManager = ShaderManager::GetInstance();
-
-		std::vector<Shader::CreateInfo> shaderCreateInfos =
-		{
-			Shader::CreateInfo
-			{
-				.Device = device,
-				.Path = "assets/shaders/TestShader.slang",
-				.EntryPoint = "VSMain",
-				.Type = Shader::eType::VERTEX,
-			},
-			Shader::CreateInfo
-			{
-				.Device = device,
-				.Path = "assets/shaders/TestShader.slang",
-				.EntryPoint = "PSMain",
-				.Type = Shader::eType::FRAGMENT,
-			},
-		};
-		shaderManager.AddShaders(shaderCreateInfos);
-
-		mDescriptorSetLayout = device.CreateDescriptorSetLayout("DescriptorSetLayout", {});
-		mPipelineLayout = device.CreatePipelineLayout("PipelineLayout", {mDescriptorSetLayout});
-		std::vector<std::string> shaderNames = {"TestShader_VSMain", "TestShader_PSMain"};
-		mPipeline = device.CreatePipeline("Pipeline", shaderNames, mPipelineLayout, *swapChain.GetBackBuffer(0).Color, *swapChain.GetBackBuffer(0).Depth);
 	}
 
 	Renderer::~Renderer() noexcept
 	{
 		Device& device = mInstance->GetPhysicalDevice().GetDevice();
 		device.GetQueue().Wait();
+		
+		if (mRenderScene != nullptr)
+		{
+			mRenderScene.reset();
+		}
+
 		for (std::unique_ptr<FrameResource>& frameResource : mFrameResources)
 		{
 			frameResource.reset();
 		}
 		mFrameResources.clear();
-
-		device.DestroyPipeline(mPipeline);
-		device.DestroyPipelineLayout(mPipelineLayout);
-		device.DestroyDescriptorSetLayout(mDescriptorSetLayout);
-
 		mInstance.reset();
 	}
 
 	void Renderer::Render() noexcept
+	{
+		FrameResource& currentFrameResource = *mFrameResources[mCurrentFrameIndex];
+		Device& device = mInstance->GetPhysicalDevice().GetDevice();
+		SwapChain& swapChain = mInstance->GetSwapChain();
+		
+		CommandBuffer& commandBuffer = currentFrameResource.GetCommandBuffer();
+
+		commandBuffer.BeginRender();
+		
+		mRenderScene->Render(commandBuffer);
+
+		currentFrameResource.End();
+
+		Queue& queue = device.GetQueue();
+		queue.Submit(currentFrameResource);
+		queue.Present(swapChain, currentFrameResource);
+		mCurrentFrameIndex = (mCurrentFrameIndex + 1) % swapChain.GetFramesCount();
+	}
+
+	void Renderer::Update() noexcept
 	{
 		FrameResource& currentFrameResource = *mFrameResources[mCurrentFrameIndex];
 		currentFrameResource.Wait();
@@ -103,15 +96,7 @@ namespace iiixrlab::graphics
 		currentFrameResource.Begin();
 
 		CommandBuffer& commandBuffer = currentFrameResource.GetCommandBuffer();
-		// commandBuffer.BindDescriptorSets(mPipelineLayout);
-		commandBuffer.BindPipeline(mPipeline);
-		commandBuffer.Draw(3, 1, 0, 0);
 
-		currentFrameResource.End();
-
-		Queue& queue = device.GetQueue();
-		queue.Submit(currentFrameResource);
-		queue.Present(swapChain, currentFrameResource);
-		mCurrentFrameIndex = (mCurrentFrameIndex + 1) % swapChain.GetFramesCount();
+		mRenderScene->Update(commandBuffer);
 	}
 }

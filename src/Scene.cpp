@@ -1,6 +1,6 @@
-#include "3dgs/Scene.h"
+#include "3dgs/scene/Scene.h"
 
-namespace iiixrlab
+namespace iiixrlab::scene
 {
     Scene::Scene(const std::filesystem::path& modelPath) noexcept
     {

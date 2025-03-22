@@ -2,7 +2,7 @@
 
 #include "pch.h"
 
-namespace iiixrlab
+namespace iiixrlab::scene
 {
     struct GaussianInfo
     {
@@ -29,15 +29,4 @@ namespace iiixrlab
         //   sh1n1_r, sh1n1_g, sh1n1_b, sh10_r, sh10_g, sh10_b, sh1p1_r, sh1p1_g, sh1p1_b
         std::vector<float> SphericalHarmonics;
     };
-
-    class Scene final
-    {
-    public:
-        Scene() = delete;
-        Scene(const std::filesystem::path& modelPath) noexcept;
-        IIIXRLAB_INLINE constexpr ~Scene() noexcept = default;
-
-    private:
-        GaussianInfo mGaussianInfo;
-    };
-}
+} // namespace iiixrlab::scene

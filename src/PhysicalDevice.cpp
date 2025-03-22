@@ -35,7 +35,6 @@ namespace iiixrlab::graphics
 		mExtensionsToEnableMap.reserve(extensionCount);
 	};
 
-	
     PhysicalDevice::PhysicalDevice(CreateInfo& createInfo) noexcept
         : mInstance(createInfo.Instance)
         , mPhysicalDevice(createInfo.PhysicalDevice)

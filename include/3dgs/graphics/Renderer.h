@@ -2,6 +2,8 @@
 
 #include "3dgs/Common.h"
 
+#include "3dgs/graphics/IRenderScene.h"
+
 namespace iiixrlab
 {
 	class Texture;
@@ -11,6 +13,7 @@ namespace iiixrlab
 	{
 		class FrameResource;
 		class Instance;
+		class IRenderScene;
 
 		struct RendererCreateInfo;
 	
@@ -28,18 +31,22 @@ namespace iiixrlab
 			Renderer& operator=(const Renderer&) = delete;
 			Renderer& operator=(Renderer&&) = delete;
 	
+			IIIXRLAB_INLINE IRenderScene& GetRenderScene() noexcept { return *mRenderScene; }
+			IIIXRLAB_INLINE const IRenderScene& GetRenderScene() const noexcept { return *mRenderScene; }
+			IIIXRLAB_INLINE void SetRenderScene(std::unique_ptr<IRenderScene>&& renderScene) noexcept { mRenderScene = std::move(renderScene); }
+
+			IIIXRLAB_INLINE Instance& GetInstance() noexcept { return *mInstance; }
+			IIIXRLAB_INLINE const Instance& GetInstance() const noexcept { return *mInstance; }
+
 			void Render() noexcept;
+			void Update() noexcept;
 	
 		private:
-			std::unique_ptr<Instance>	mInstance;
+			std::unique_ptr<IRenderScene>	mRenderScene;
+			std::unique_ptr<Instance>		mInstance;
 	
 			std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 			uint32_t mCurrentFrameIndex;
-	
-			VkPipelineLayout mPipelineLayout;
-			VkPipeline mPipeline;
-			VkDescriptorSetLayout mDescriptorSetLayout;
-			VkDescriptorPool mDescriptorPool;
 		};
 	
 		

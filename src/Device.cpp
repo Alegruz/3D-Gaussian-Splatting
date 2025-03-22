@@ -1,13 +1,17 @@
 #include "3dgs/graphics/Device.hpp"
 
+#include "3dgs/graphics/Buffer.h"
 #include "3dgs/graphics/CommandPool.h"
 #include "3dgs/graphics/Instance.h"
+#include "3dgs/graphics/Pipeline.h"
 #include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/Queue.h"
 #include "3dgs/graphics/Shader.h"
 #include "3dgs/graphics/ShaderManager.h"
+#include "3dgs/graphics/StagingBuffer.h"
 #include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
+#include "3dgs/graphics/VertexBuffer.h"
 
 namespace iiixrlab::graphics
 {
@@ -82,15 +86,53 @@ namespace iiixrlab::graphics
 		return fence;
 	}
 
-	VkPipeline Device::CreatePipeline(const char* name, const std::vector<std::string>& shaderNames, VkPipelineLayout pipelineLayout, const Texture& colorAttachment, const Texture& depthAttachment) noexcept
+	std::unique_ptr<Pipeline> Device::CreatePipeline(const PipelineCreateInfo& pipelineCreateInfo) noexcept
 	{
+		assert(pipelineCreateInfo.Name != nullptr);
+		assert(pipelineCreateInfo.ShaderNames.size() > 0);
+
 		VkResult vr = VK_SUCCESS;
-		assert(name != nullptr);
-		VkPipeline pipeline = VK_NULL_HANDLE;
+
+		Pipeline::CreateInfo createInfo =
+		{
+			.Device = *this,
+			.Name = pipelineCreateInfo.Name,
+		};
+
+		createInfo.DescriptorSetLayouts.resize(1, VK_NULL_HANDLE);
+		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.bindingCount = static_cast<uint32_t>(pipelineCreateInfo.DescriptorSetLayoutBindings.size()),
+			.pBindings = pipelineCreateInfo.DescriptorSetLayoutBindings.data(),
+		};
+		vr = vkCreateDescriptorSetLayout(mDevice, &descriptorSetLayoutCreateInfo, nullptr, &createInfo.DescriptorSetLayouts[0]);
+		assert(vr == VK_SUCCESS && createInfo.DescriptorSetLayouts[0] != VK_NULL_HANDLE);
+#if defined(_DEBUG)
+		SetDebugName(createInfo.Name.c_str(), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, createInfo.DescriptorSetLayouts[0]);
+#endif	// defined(_DEBUG)
+
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0,
+			.setLayoutCount = static_cast<uint32_t>(createInfo.DescriptorSetLayouts.size()),
+			.pSetLayouts = createInfo.DescriptorSetLayouts.data(),
+			.pushConstantRangeCount = 0,
+			.pPushConstantRanges = nullptr,
+		};
+		vr = vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &createInfo.PipelineLayout);
+		assert(vr == VK_SUCCESS && createInfo.PipelineLayout != VK_NULL_HANDLE);
+#if defined(_DEBUG)
+		SetDebugName(createInfo.Name.c_str(), VK_OBJECT_TYPE_PIPELINE_LAYOUT, createInfo.PipelineLayout);
+#endif	// defined(_DEBUG)
 
 		ShaderManager& shaderManager = ShaderManager::GetInstance();
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
-		for (const std::string& shaderName : shaderNames)
+		for (const std::string& shaderName : pipelineCreateInfo.ShaderNames)
 		{
 			std::unique_ptr<Shader>* ppShader = shaderManager.GetShaderOrNull(shaderName);
 			if (ppShader == nullptr)
@@ -229,8 +271,8 @@ namespace iiixrlab::graphics
 			.pDynamicStates = dynamicStateEnables.data(),
 		};
 
-		VkFormat colorAttachmentFormat = colorAttachment.GetFormat();
-		VkFormat depthAttachmentFormat = depthAttachment.GetFormat();
+		VkFormat colorAttachmentFormat = pipelineCreateInfo.ColorAttachment.GetFormat();
+		VkFormat depthAttachmentFormat = pipelineCreateInfo.DepthAttachment.GetFormat();
 		VkPipelineRenderingCreateInfo renderingCreateInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
@@ -239,7 +281,7 @@ namespace iiixrlab::graphics
 			.depthAttachmentFormat = depthAttachmentFormat,
 		};
 
-		VkGraphicsPipelineCreateInfo pipelineCreateInfo =
+		VkGraphicsPipelineCreateInfo vkPipelineCreateInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 			.pNext = &renderingCreateInfo,
@@ -255,44 +297,21 @@ namespace iiixrlab::graphics
 			.pDepthStencilState = &depthStencilStateCreateInfo,
 			.pColorBlendState = &colorBlendStateCreateInfo,
 			.pDynamicState = &dynamicStateCreateInfo,
-			.layout = pipelineLayout,
+			.layout = createInfo.PipelineLayout,
 			.renderPass = VK_NULL_HANDLE,
 			.subpass = 0,
 			.basePipelineHandle = VK_NULL_HANDLE,
 			.basePipelineIndex = 0,
 		};
 
-		vr = vkCreateGraphicsPipelines(mDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline);
-		assert(vr == VK_SUCCESS && pipeline != VK_NULL_HANDLE);
+		vr = vkCreateGraphicsPipelines(mDevice, VK_NULL_HANDLE, 1, &vkPipelineCreateInfo, nullptr, &createInfo.Pipeline);
+		assert(vr == VK_SUCCESS && createInfo.Pipeline != VK_NULL_HANDLE);
 #if defined(_DEBUG)
-		SetDebugName(name, VK_OBJECT_TYPE_PIPELINE, pipeline);
+		SetDebugName(createInfo.Name.c_str(), VK_OBJECT_TYPE_PIPELINE, createInfo.Pipeline);
 #endif	// defined(_DEBUG)
 
-		return pipeline;
-	}
-
-	VkPipelineLayout Device::CreatePipelineLayout(const char* name, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) noexcept
-	{
-		VkResult vr = VK_SUCCESS;
-		assert(name != nullptr);
-		VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-			.pNext = nullptr,
-			.flags = 0,
-			.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
-			.pSetLayouts = descriptorSetLayouts.data(),
-			.pushConstantRangeCount = 0,
-			.pPushConstantRanges = nullptr,
-		};
-		vr = vkCreatePipelineLayout(mDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-		assert(vr == VK_SUCCESS && pipelineLayout != VK_NULL_HANDLE);
-#if defined(_DEBUG)
-		SetDebugName(name, VK_OBJECT_TYPE_PIPELINE_LAYOUT, pipelineLayout);
-#endif	// defined(_DEBUG)
-
-		return pipelineLayout;
+		Pipeline pipeline(createInfo);
+		return std::make_unique<Pipeline>(std::move(pipeline));
 	}
 
 	VkShaderModule Device::CreateShaderModule(const char* name, const std::filesystem::path& path) noexcept
@@ -362,28 +381,6 @@ namespace iiixrlab::graphics
 		return commandBuffer;
 	}
 
-	VkDescriptorSetLayout Device::CreateDescriptorSetLayout(const char* name, const std::vector<VkDescriptorSetLayoutBinding>& descriptorSetLayoutBindings) noexcept
-	{
-		VkResult vr = VK_SUCCESS;
-		assert(name != nullptr);
-		VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-		VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-			.pNext = nullptr,
-			.flags = 0,
-			.bindingCount = static_cast<uint32_t>(descriptorSetLayoutBindings.size()),
-			.pBindings = descriptorSetLayoutBindings.data(),
-		};
-		vr = vkCreateDescriptorSetLayout(mDevice, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout);
-		assert(vr == VK_SUCCESS && descriptorSetLayout != VK_NULL_HANDLE);
-#if defined(_DEBUG)
-		SetDebugName(name, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, descriptorSetLayout);
-#endif	// defined(_DEBUG)
-
-		return descriptorSetLayout;
-	}
-
 	VkImageView Device::CreateImageView(const char* name, const VkImage image, const VkFormat format, const uint8_t usage) noexcept
 	{
 		VkResult vr = VK_SUCCESS;
@@ -449,6 +446,24 @@ namespace iiixrlab::graphics
 #endif	// defined(_DEBUG)
 
 		return semaphore;
+	}
+
+	std::unique_ptr<StagingBuffer> Device::CreateStagingBuffer(const char* name, const uint32_t stagingBufferSize) noexcept
+	{
+		Buffer::CreateInfo createInfo =
+		{
+			.GpuResourceCreateInfo = GpuResource::CreateInfo
+			{
+				.Device = *this,
+				.Name = name,
+				.Size = stagingBufferSize,
+			},
+			.Buffer = VK_NULL_HANDLE,
+			.BufferMemory = VK_NULL_HANDLE,
+		};
+		Buffer::create(mDevice, createInfo, mPhysicalDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		StagingBuffer stagingBuffer(createInfo);
+		return std::make_unique<StagingBuffer>(std::move(stagingBuffer));
 	}
 
 	std::unique_ptr<Texture> Device::CreateTexture(const TextureCreateInfo& textureCreateInfo) noexcept
@@ -554,6 +569,24 @@ namespace iiixrlab::graphics
 		return std::make_unique<Texture>(createInfo);
 	}
 
+	std::unique_ptr<VertexBuffer> Device::CreateVertexBuffer(const char* name, const uint32_t vertexBufferSize) noexcept
+	{
+		Buffer::CreateInfo createInfo =
+		{
+			.GpuResourceCreateInfo = GpuResource::CreateInfo
+			{
+				.Device = *this,
+				.Name = name,
+				.Size = vertexBufferSize,
+			},
+			.Buffer = VK_NULL_HANDLE,
+			.BufferMemory = VK_NULL_HANDLE,
+		};
+		Buffer::create(mDevice, createInfo, mPhysicalDevice, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		VertexBuffer vertexBuffer(createInfo);
+		return std::make_unique<VertexBuffer>(std::move(vertexBuffer));
+	}
+
 	void Device::DestroyCommandBuffer(VkCommandBuffer& commandBuffer) noexcept
 	{
 		if (commandBuffer != VK_NULL_HANDLE)
@@ -650,6 +683,15 @@ namespace iiixrlab::graphics
 		{
 			vkDestroySwapchainKHR(mDevice, swapChain, nullptr);
 			swapChain = VK_NULL_HANDLE;
+		}
+	}
+
+	void Device::DestroyBuffer(VkBuffer& vertexBuffer) noexcept
+	{
+		if (vertexBuffer != VK_NULL_HANDLE)
+		{
+			vkDestroyBuffer(mDevice, vertexBuffer, nullptr);
+			vertexBuffer = VK_NULL_HANDLE;
 		}
 	}
 
