@@ -108,6 +108,39 @@ namespace iiixrlab::graphics
 					.intValue0 = 1,
 				},
 			},
+#if defined(_DEBUG)
+			slang::CompilerOptionEntry
+			{
+				.name = slang::CompilerOptionName::DebugInformation,
+				.value = slang::CompilerOptionValue
+				{
+					.kind = slang::CompilerOptionValueKind::Int,
+					.intValue0 = SlangDebugInfoLevel::SLANG_DEBUG_INFO_LEVEL_MAXIMAL,
+				},
+			},
+			slang::CompilerOptionEntry
+			{
+				.name = slang::CompilerOptionName::DebugInformationFormat,
+				.value = slang::CompilerOptionValue
+				{
+					.kind = slang::CompilerOptionValueKind::Int,
+					.intValue0 = SlangDebugInfoFormat::SLANG_DEBUG_INFO_FORMAT_PDB,
+				},
+			},
+#endif	// NOT defined(_DEBUG)
+			slang::CompilerOptionEntry
+			{
+				.name = slang::CompilerOptionName::Optimization,
+				.value = slang::CompilerOptionValue
+				{
+					.kind = slang::CompilerOptionValueKind::Int,
+#if defined(_DEBUG)
+					.intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_NONE,
+#else	// NOT defined(_DEBUG)
+					.intValue0 = SlangOptimizationLevel::SLANG_OPTIMIZATION_LEVEL_HIGH,
+#endif	// NOT defined(_DEBUG)
+				},
+			},
 			slang::CompilerOptionEntry
 			{
 				.name = slang::CompilerOptionName::WarningsAsErrors,
@@ -126,6 +159,7 @@ namespace iiixrlab::graphics
 			.compilerOptionEntries = compilerOptions.data(),
 			.compilerOptionEntryCount = static_cast<uint32_t>(compilerOptions.size()),
 		};
+
 
 		Slang::ComPtr<slang::ISession> session;
 		mGlobalSession->createSession(sessionDesc, session.writeRef());

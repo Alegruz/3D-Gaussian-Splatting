@@ -38,6 +38,8 @@ namespace iiixrlab::graphics
         void Begin(FrameResource& frameResource) noexcept;
         void BindDescriptorSets(const VkPipelineLayout pipelineLayout, const VkDescriptorSet& descriptorSet) noexcept;
         void BindPipeline(const VkPipeline pipeline) noexcept;
+        void Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t firstVertex, const uint32_t firstInstance) noexcept;
+        void DrawIndexed(const uint32_t indexCount, const uint32_t instanceCount, const uint32_t firstIndex, const int32_t vertexOffset, const uint32_t firstInstance) noexcept;
         void End() noexcept;
         void Reset() noexcept;
     

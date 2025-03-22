@@ -4,9 +4,9 @@ struct VSOutput
 };
 
 static float3 TRIANGLE_VERTICES[3] = {
-    float3(0.0f, 0.5f, 0.0f),
-    float3(0.5f, -0.5f, 0.0f),
-    float3(-0.5f, -0.5f, 0.0f)
+    float3(0.0f, -0.5f, 0.0f),
+    float3(0.5f, 0.5f, 0.0f),
+    float3(-0.5f, 0.5f, 0.0f),
 };
 
 [shader("vertex")]

@@ -163,6 +163,16 @@ namespace iiixrlab::graphics
 		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	}
 
+	void CommandBuffer::Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t firstVertex, const uint32_t firstInstance) noexcept
+	{
+		vkCmdDraw(mCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+	}
+
+	void CommandBuffer::DrawIndexed(const uint32_t indexCount, const uint32_t instanceCount, const uint32_t firstIndex, const int32_t vertexOffset, const uint32_t firstInstance) noexcept
+	{
+		vkCmdDrawIndexed(mCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+	}
+
     void CommandBuffer::End() noexcept
     {
         Texture& backBuffer = mFrameResourceOrNull->GetBackBuffer();

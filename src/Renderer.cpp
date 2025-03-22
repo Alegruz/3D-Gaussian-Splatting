@@ -105,6 +105,7 @@ namespace iiixrlab::graphics
 		CommandBuffer& commandBuffer = currentFrameResource.GetCommandBuffer();
 		// commandBuffer.BindDescriptorSets(mPipelineLayout);
 		commandBuffer.BindPipeline(mPipeline);
+		commandBuffer.Draw(3, 1, 0, 0);
 
 		currentFrameResource.End();
 
