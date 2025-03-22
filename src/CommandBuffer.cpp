@@ -2,6 +2,8 @@
 
 #include "3dgs/graphics/Device.h"
 #include "3dgs/graphics/FrameResource.h"
+#include "3dgs/graphics/Instance.h"
+#include "3dgs/graphics/PhysicalDevice.h"
 #include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
 
@@ -78,7 +80,7 @@ namespace iiixrlab::graphics
 			.image = depthBuffer.GetImage(),
 			.subresourceRange = 
 			{
-				.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+				.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
 				.baseMipLevel = 0,
 				.levelCount = 1,
 				.baseArrayLayer = 0,
@@ -128,7 +130,9 @@ namespace iiixrlab::graphics
 			.pDepthAttachment = &depthAttachmentInfo,
 		};
 
-		vkCmdBeginRendering(mCommandBuffer, &renderingInfo);
+		const uint32_t apiVersion = mDevice.GetPhysicalDevice().GetInstance().GetApiVersion();
+		static PFN_vkCmdBeginRendering pfnVkCmdBeginRendering = (apiVersion > VK_API_VERSION_1_3) ? vkCmdBeginRendering : vkCmdBeginRenderingKHR;
+		pfnVkCmdBeginRendering(mCommandBuffer, &renderingInfo);
 
         VkViewport viewport =
         {
@@ -165,7 +169,9 @@ namespace iiixrlab::graphics
 		
         VkResult vr = VK_SUCCESS;
 
-		vkCmdEndRendering(mCommandBuffer);
+		const uint32_t apiVersion = mDevice.GetPhysicalDevice().GetInstance().GetApiVersion();
+		static PFN_vkCmdEndRendering pfnVkCmdEndRendering = (apiVersion > VK_API_VERSION_1_3) ? vkCmdEndRendering : vkCmdEndRenderingKHR;
+		pfnVkCmdEndRendering(mCommandBuffer);
 		
 		VkImageMemoryBarrier backBufferMemoryBarrier = 
 		{

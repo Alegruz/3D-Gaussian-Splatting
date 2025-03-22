@@ -54,6 +54,10 @@ namespace iiixrlab::graphics
 		mCommandPool->FreeCommandBuffers();
 		mCommandPool.reset();
 		mQueues.clear();
+
+		ShaderManager& shaderManager = ShaderManager::GetInstance();
+		shaderManager.DestroyShaders();
+
 		PhysicalDevice::DestroyDevice(mDevice);
 	}
 
@@ -101,7 +105,7 @@ namespace iiixrlab::graphics
 				.pNext = nullptr,
 				.flags = 0,
 				.module = shader.GetShaderModule(),
-				.pName = shader.GetEntryPoint().c_str(),
+				.pName = "main",	// Slang always uses "main"
 			};
 
 			switch (shader.GetType())
@@ -233,7 +237,6 @@ namespace iiixrlab::graphics
 			.colorAttachmentCount = 1,
 			.pColorAttachmentFormats = &colorAttachmentFormat,
 			.depthAttachmentFormat = depthAttachmentFormat,
-			.stencilAttachmentFormat = depthAttachmentFormat,
 		};
 
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo =

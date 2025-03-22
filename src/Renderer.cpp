@@ -46,22 +46,25 @@ namespace iiixrlab::graphics
 		}
 
 		ShaderManager& shaderManager = ShaderManager::GetInstance();
-		Shader::CreateInfo vsCreateInfo =
+
+		std::vector<Shader::CreateInfo> shaderCreateInfos =
 		{
-			.Device = device,
-			.Path = "assets/shaders/TestShader.slang",
-			.EntryPoint = "VSMain",
-			.Type = Shader::eType::VERTEX,
+			Shader::CreateInfo
+			{
+				.Device = device,
+				.Path = "assets/shaders/TestShader.slang",
+				.EntryPoint = "VSMain",
+				.Type = Shader::eType::VERTEX,
+			},
+			Shader::CreateInfo
+			{
+				.Device = device,
+				.Path = "assets/shaders/TestShader.slang",
+				.EntryPoint = "PSMain",
+				.Type = Shader::eType::FRAGMENT,
+			},
 		};
-		shaderManager.AddShader(vsCreateInfo);
-		Shader::CreateInfo psCreateInfo =
-		{
-			.Device = device,
-			.Path = "assets/shaders/TestShader.slang",
-			.EntryPoint = "PSMain",
-			.Type = Shader::eType::FRAGMENT,
-		};
-		shaderManager.AddShader(psCreateInfo);
+		shaderManager.AddShaders(shaderCreateInfos);
 
 		mDescriptorSetLayout = device.CreateDescriptorSetLayout("DescriptorSetLayout", {});
 		mPipelineLayout = device.CreatePipelineLayout("PipelineLayout", {mDescriptorSetLayout});
@@ -71,9 +74,14 @@ namespace iiixrlab::graphics
 
 	Renderer::~Renderer() noexcept
 	{
+		Device& device = mInstance->GetPhysicalDevice().GetDevice();
+		device.GetQueue().Wait();
+		for (std::unique_ptr<FrameResource>& frameResource : mFrameResources)
+		{
+			frameResource.reset();
+		}
 		mFrameResources.clear();
 
-		Device& device = mInstance->GetPhysicalDevice().GetDevice();
 		device.DestroyPipeline(mPipeline);
 		device.DestroyPipelineLayout(mPipelineLayout);
 		device.DestroyDescriptorSetLayout(mDescriptorSetLayout);

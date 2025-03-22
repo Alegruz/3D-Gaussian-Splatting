@@ -49,6 +49,7 @@ namespace iiixrlab::graphics
 
 		IIIXRLAB_INLINE Queue& GetQueue(const uint32_t index = 0) noexcept { return *mQueues[index]; }
 		IIIXRLAB_INLINE const Queue& GetQueue(const uint32_t index = 0) const noexcept { return *mQueues[index]; }
+		IIIXRLAB_INLINE const PhysicalDevice& GetPhysicalDevice() const noexcept { return mPhysicalDevice; }
 
 		uint32_t AcquireNextImage(const SwapChain& swapChain, const VkSemaphore semaphore, const VkFence fence) noexcept;
 		VkCommandBuffer AllocateCommandBuffer(const char* name) noexcept;

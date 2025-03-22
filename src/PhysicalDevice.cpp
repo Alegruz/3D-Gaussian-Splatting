@@ -5,6 +5,37 @@
 
 namespace iiixrlab::graphics
 {
+	class DeviceExtensionBuilder final : public IExtensionBuilder
+	{
+	public:
+		DeviceExtensionBuilder() = delete;
+		DeviceExtensionBuilder(VkPhysicalDevice physicalDevice) noexcept;
+		~DeviceExtensionBuilder() noexcept = default;
+
+		DeviceExtensionBuilder& operator=(const DeviceExtensionBuilder&) = delete;
+		DeviceExtensionBuilder& operator=(DeviceExtensionBuilder&&) = delete;
+	};
+
+	DeviceExtensionBuilder::DeviceExtensionBuilder(VkPhysicalDevice physicalDevice) noexcept
+	{
+		uint32_t extensionCount = 0;
+		VkResult vr = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+		assert(vr == VK_SUCCESS && extensionCount > 0);
+
+		std::vector<VkExtensionProperties> extensionProperties(extensionCount);
+		vr = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, extensionProperties.data());
+		assert(vr == VK_SUCCESS);
+
+		for (const VkExtensionProperties& extensionProperty : extensionProperties)
+		{
+			mAvailableExtensions.insert(extensionProperty.extensionName);
+		}
+
+		mExtensionsToEnable.reserve(extensionCount);
+		mExtensionsToEnableMap.reserve(extensionCount);
+	};
+
+	
     PhysicalDevice::PhysicalDevice(CreateInfo& createInfo) noexcept
         : mInstance(createInfo.Instance)
         , mPhysicalDevice(createInfo.PhysicalDevice)
@@ -159,43 +190,51 @@ namespace iiixrlab::graphics
 		vkGetPhysicalDeviceFeatures2(physicalDevice, &physicalDeviceFeatures2);
 		pNext = &physicalDeviceFeatures2;
 		
+		VkPhysicalDeviceVulkan14Features physicalDeviceVulkan14Features = {};
 		if (apiVersion >= VK_API_VERSION_1_4)
 		{
-			VkPhysicalDeviceVulkan14Features physicalDeviceVulkan14Features =
-			{
-				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES,
-				.pNext = pNext,
-			};
+			physicalDeviceVulkan14Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;
+			physicalDeviceVulkan14Features.pNext = pNext;
 			pNext = &physicalDeviceVulkan14Features;   
 		}
 
+		VkPhysicalDeviceVulkan13Features physicalDeviceVulkan13Features = {};
+		VkPhysicalDeviceDynamicRenderingFeaturesKHR physicalDeviceDynamicRenderingFeaturesKHR = {};
+		VkPhysicalDeviceSynchronization2FeaturesKHR physicalDeviceSynchronization2FeaturesKHR = {};
 		if (apiVersion >= VK_API_VERSION_1_3)
 		{
-			VkPhysicalDeviceVulkan13Features physicalDeviceVulkan13Features =
-			{
-				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
-				.pNext = pNext,
-			};
+			physicalDeviceVulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+			physicalDeviceVulkan13Features.pNext = pNext;
+			physicalDeviceVulkan13Features.synchronization2 = VK_TRUE;
+			physicalDeviceVulkan13Features.dynamicRendering = VK_TRUE;
 			pNext = &physicalDeviceVulkan13Features;
 		}
+		else
+		{
+			physicalDeviceDynamicRenderingFeaturesKHR.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+			physicalDeviceDynamicRenderingFeaturesKHR.pNext = pNext;
+			physicalDeviceDynamicRenderingFeaturesKHR.dynamicRendering = VK_TRUE;
+			pNext = &physicalDeviceDynamicRenderingFeaturesKHR;
+			
+			physicalDeviceSynchronization2FeaturesKHR.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
+			physicalDeviceSynchronization2FeaturesKHR.pNext = pNext;
+			physicalDeviceSynchronization2FeaturesKHR.synchronization2 = VK_TRUE;
+			pNext = &physicalDeviceSynchronization2FeaturesKHR;
+		}
 		
+		VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features = {};
 		if (apiVersion >= VK_API_VERSION_1_2)
 		{
-			VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features =
-			{
-				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-				.pNext = pNext,
-			};
+			physicalDeviceVulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+			physicalDeviceVulkan12Features.pNext = pNext;
 			pNext = &physicalDeviceVulkan12Features;
 		}
 		
+		VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features = {};
 		if (apiVersion >= VK_API_VERSION_1_1)
 		{
-			VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features =
-			{
-				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
-				.pNext = pNext,
-			};
+			physicalDeviceVulkan11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+			physicalDeviceVulkan11Features.pNext = pNext;
 			pNext = &physicalDeviceVulkan11Features;
 		}
 
@@ -255,10 +294,33 @@ namespace iiixrlab::graphics
 		}
 
 		// Extensions
-		std::vector<const char*> extensionNamesToEnable =
+		DeviceExtensionBuilder deviceExtensionBuilder(physicalDevice);
+		deviceExtensionBuilder.AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+		// VK_KHR_synchronization2
+		if (apiVersion < VK_API_VERSION_1_3)
 		{
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-		};
+			if (apiVersion < VK_API_VERSION_1_1)
+			{
+				deviceExtensionBuilder.AddExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+			}
+			deviceExtensionBuilder.AddExtension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+		}
+
+		// VK_KHR_dynamic_rendering
+		if (apiVersion == VK_API_VERSION_1_2)
+		{
+			deviceExtensionBuilder.AddExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+		}
+		else
+		{
+			deviceExtensionBuilder.AddExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
+			if (apiVersion < VK_API_VERSION_1_1)
+			{
+				deviceExtensionBuilder.AddExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+			}
+		}
+		const std::vector<const char*>& extensionNamesToEnable = deviceExtensionBuilder.GetExtensionsToEnable();
 
 		VkDeviceCreateInfo deviceCreateInfo =
 		{
@@ -338,7 +400,12 @@ namespace iiixrlab::graphics
 		pfnVkGetPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, nullptr);
 		assert(queueFamilyPropertyCount > 0);
 		outMainQueueFamilyPropertyIndex = queueFamilyPropertyCount;
-		outQueueFamilyProperties.resize(queueFamilyPropertyCount);
+		outQueueFamilyProperties.resize(queueFamilyPropertyCount
+			, VkQueueFamilyProperties2
+			{
+				.sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2,
+				.pNext = nullptr,
+			});
 		pfnVkGetPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertyCount, outQueueFamilyProperties.data());
 
 		for (uint32_t queueFamilyPropertiesIndex = 0; queueFamilyPropertiesIndex < queueFamilyPropertyCount; ++queueFamilyPropertiesIndex)

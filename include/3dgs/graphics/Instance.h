@@ -14,6 +14,30 @@ namespace iiixrlab::graphics
 	class PhysicalDevice;
 	class SwapChain;
 
+	class IExtensionBuilder
+	{
+	public:
+		IExtensionBuilder(const IExtensionBuilder&) = delete;
+		IExtensionBuilder(IExtensionBuilder&&) = delete;
+
+		virtual ~IExtensionBuilder() = default;
+
+		IExtensionBuilder& operator=(const IExtensionBuilder&) = delete;
+		IExtensionBuilder& operator=(IExtensionBuilder&&) = delete;
+
+		IIIXRLAB_INLINE const std::vector<const char*>& GetExtensionsToEnable() const noexcept { return mExtensionsToEnable; }
+
+		bool AddExtension(const std::string& extension) noexcept;
+
+	protected:
+		IExtensionBuilder() = default;
+	
+	protected:
+		std::unordered_set<std::string> mAvailableExtensions;
+		std::unordered_set<std::string> mExtensionsToEnableMap;
+		std::vector<const char*> mExtensionsToEnable;
+	};
+
 	class Instance final
 	{
 	public:

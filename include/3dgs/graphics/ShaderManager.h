@@ -23,7 +23,8 @@ namespace iiixrlab::graphics
         IIIXRLAB_INLINE std::unique_ptr<Shader>* GetShaderOrNull(const std::string& name) noexcept { auto result = mShaders.find(name); return result != mShaders.end() ? &result->second : nullptr; }
         IIIXRLAB_INLINE const std::unique_ptr<Shader>* GetShaderOrNull(const std::string& name) const noexcept { const auto result = mShaders.find(name); return result != mShaders.cend() ? &result->second : nullptr; }
 
-        void AddShader(Shader::CreateInfo& createInfo) noexcept;
+        void AddShaders(std::vector<Shader::CreateInfo>& createInfo) noexcept;
+        void DestroyShaders() noexcept;
 
     private:
         ShaderManager() noexcept;

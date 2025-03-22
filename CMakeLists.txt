@@ -44,14 +44,25 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         ${PROJECT_SOURCE_DIR}/build/external/zlib/Debug/zlibd.dll
         $<TARGET_FILE_DIR:3D-Gaussian-Splatting>
     )
+    
+    set(VULKAN_DEBUG_ENV "VK_LOADER_DEBUG=all")
 else()
-target_compile_definitions(3D-Gaussian-Splatting PRIVATE RELEASE)
-add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${PROJECT_SOURCE_DIR}/build/external/zlib/Release/zlib.dll
-    $<TARGET_FILE_DIR:3D-Gaussian-Splatting>
-)
+    target_compile_definitions(3D-Gaussian-Splatting PRIVATE RELEASE)
+    add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${PROJECT_SOURCE_DIR}/build/external/zlib/Release/zlib.dll
+        $<TARGET_FILE_DIR:3D-Gaussian-Splatting>
+    )
 endif()
+
+set(DISABLED_VULKAN_LAYERS "GalaxyOverlayVkLayer*,VK_LAYER_NV_optimus")
+add_custom_target(run
+    COMMAND ${CMAKE_COMMAND} -E env
+        VK_LOADER_LAYERS_DISABLE=${DISABLED_VULKAN_LAYERS}
+        ${VULKAN_DEBUG_ENV}
+        $<TARGET_FILE:3D-Gaussian-Splatting>
+    DEPENDS 3D-Gaussian-Splatting
+)
 
 add_custom_command(TARGET 3D-Gaussian-Splatting POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -87,6 +98,7 @@ if (WIN32)
 elseif (UNIX)
     set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
 endif()
+# set(VULKAN_HEADERS_INSTALL_DIR ${PROJECT_SOURCE_DIR}/external/vulkan)
 
 add_subdirectory(external/volk)
 target_link_libraries(3D-Gaussian-Splatting PRIVATE volk)

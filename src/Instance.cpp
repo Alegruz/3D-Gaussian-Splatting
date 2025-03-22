@@ -8,6 +8,77 @@
 
 namespace iiixrlab::graphics
 {
+	class InstanceExtensionBuilder final : public IExtensionBuilder
+	{
+	public:
+		InstanceExtensionBuilder() noexcept;
+		~InstanceExtensionBuilder() noexcept = default;
+
+		InstanceExtensionBuilder& operator=(const InstanceExtensionBuilder&) = delete;
+		InstanceExtensionBuilder& operator=(InstanceExtensionBuilder&&) = delete;
+	};
+
+	bool IExtensionBuilder::AddExtension(const std::string& extension) noexcept
+	{
+		if (mAvailableExtensions.find(extension) == mAvailableExtensions.end())
+		{
+			std::cerr << "Extension: " << extension << " is not available.\n";
+			IIIXRLAB_DEBUG_BREAK();
+			return false;
+		}
+
+		if (mExtensionsToEnableMap.find(extension) != mExtensionsToEnableMap.end())
+		{
+			return false;
+		}
+
+		auto insertResult = mExtensionsToEnableMap.insert(extension);
+		mExtensionsToEnable.push_back(insertResult.first->c_str());
+		return true;
+	}
+
+	InstanceExtensionBuilder::InstanceExtensionBuilder() noexcept
+	{
+		uint32_t extensionCount = 0;
+		VkResult vr = vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+		assert(vr == VK_SUCCESS && extensionCount > 0);
+
+		std::vector<VkExtensionProperties> extensionProperties(extensionCount);
+		vr = vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensionProperties.data());
+		assert(vr == VK_SUCCESS);
+
+		for (const VkExtensionProperties& extensionProperty : extensionProperties)
+		{	
+			mAvailableExtensions.insert(extensionProperty.extensionName);
+		}
+
+		mExtensionsToEnable.reserve(extensionCount);
+		mExtensionsToEnableMap.reserve(extensionCount);
+	}
+
+	static constexpr void FilterMessages(bool& bInoutBreak, bool& bInoutPrintMessage, const char* message) noexcept
+	{
+		if (bInoutBreak == true || bInoutPrintMessage == true)
+		{
+			if (strstr(message, "#LLP_LAYER_3") != nullptr)
+			{
+				if (strstr(message, "GalaxyOverlayVkLayer") != nullptr)
+				{
+					bInoutPrintMessage = false;
+					bInoutBreak = false;
+				}
+			}
+
+			if (strstr(message, "uses API version") != nullptr 
+			&& strstr(message, "which is older than the application specified API version of ") != nullptr 
+			&& strstr(message, "May cause issues.") != nullptr)
+			{
+				bInoutPrintMessage = false;
+				bInoutBreak = false;
+			}
+		}
+	}
+
 	VkBool32 Instance::DebugReportCallback(VkDebugReportFlagsEXT flags, [[maybe_unused]] VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, [[maybe_unused]] void* pUserData) noexcept
 	{
 		bool bBreak = false;
@@ -37,6 +108,8 @@ namespace iiixrlab::graphics
 			assert(false);
 			break;
 		}
+		
+		FilterMessages(bBreak, bPrintMessage, pMessage);
 
 		if (bPrintMessage == true)
 		{
@@ -92,6 +165,11 @@ namespace iiixrlab::graphics
 			assert(false);
 			break;
 		}
+		
+		if (pCallbackData != nullptr)
+		{
+			FilterMessages(bBreak, bPrintMessage, pCallbackData->pMessage);
+		}
 
 		if (bPrintMessage == true)
 		{
@@ -135,6 +213,7 @@ namespace iiixrlab::graphics
 				assert(false);
 			}
 
+			assert(pCallbackData != nullptr);
 			std::cout << "MessageId: [" << pCallbackData->pMessageIdName << ", #: " << pCallbackData->messageIdNumber << "] Message:" << pCallbackData->pMessage << '\n';
 			for (uint32_t i = 0; i < pCallbackData->queueLabelCount; ++i)
 			{
@@ -236,25 +315,32 @@ namespace iiixrlab::graphics
 		pNext = &debugReportCallbackCreateInfo;
 #endif	// defined(_DEBUG)
 
-		std::vector<const char*> extensionNamesToEnable =
+		std::vector<const char*> layerNamesToEnable =
 		{
 #if defined(_DEBUG)
-			VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+			"VK_LAYER_KHRONOS_validation",
 #endif	// defined(_DEBUG)
-			//VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME,
-			//VK_EXT_VALIDATION_FLAGS_EXTENSION_NAME,
+		};
+
+		InstanceExtensionBuilder instanceExtensionBuilder;
+#if defined(_DEBUG)
+		instanceExtensionBuilder.AddExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+		instanceExtensionBuilder.AddExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif	// defined(_DEBUG)
+		// instanceExtensionBuilder.AddExtension(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
+		// instanceExtensionBuilder.AddExtension(VK_EXT_VALIDATION_FLAGS_EXTENSION_NAME);
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-			VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+		instanceExtensionBuilder.AddExtension(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #else
 #error 0
 #endif
-			VK_KHR_SURFACE_EXTENSION_NAME,
-		};
+		instanceExtensionBuilder.AddExtension(VK_KHR_SURFACE_EXTENSION_NAME);
+
+		const std::vector<const char*>& extensionNamesToEnable = instanceExtensionBuilder.GetExtensionsToEnable();
 
 		if (mApiVersion < VK_API_VERSION_1_1)
 		{
-			extensionNamesToEnable.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+			instanceExtensionBuilder.AddExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 		}
 
 		VkInstanceCreateInfo instanceCreateInfo =
@@ -263,8 +349,8 @@ namespace iiixrlab::graphics
 			.pNext = pNext,
 			.flags = 0,
 			.pApplicationInfo = &applicationInfo,
-			.enabledLayerCount = 0,
-			.ppEnabledLayerNames = nullptr,
+			.enabledLayerCount = static_cast<uint32_t>(layerNamesToEnable.size()),
+			.ppEnabledLayerNames = layerNamesToEnable.data(),
 			.enabledExtensionCount = static_cast<uint32_t>(extensionNamesToEnable.size()),
 			.ppEnabledExtensionNames = extensionNamesToEnable.data(),
 		};
@@ -378,7 +464,7 @@ namespace iiixrlab::graphics
 			.flags = 0,
 			.surface = createInfo.Surface,
 			.minImageCount = std::clamp(createInfo.FramesCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount),
-			.imageFormat = VK_FORMAT_B8G8R8A8_UNORM,
+			.imageFormat = VK_FORMAT_B8G8R8A8_SRGB,
 			.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 			.imageExtent = VkExtent2D{ .width = createInfo.FrameExtent.width, .height = createInfo.FrameExtent.height },
 			.imageArrayLayers = 1,
@@ -450,7 +536,6 @@ namespace iiixrlab::graphics
 		mSwapChain = std::make_unique<SwapChain>(createInfo);
 		return *mSwapChain;
 	}
-
 
 	VkPhysicalDevice Instance::selectPhysicalDevice(VkPhysicalDeviceMemoryProperties& outPhysicalDeviceMemoryProperties, const uint32_t apiVersion, VkInstance& instance) noexcept
 	{

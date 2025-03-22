@@ -32,7 +32,7 @@ namespace iiixrlab::graphics
 	public:
 		Shader() = delete;
 
-		Shader(CreateInfo& createInfo) noexcept;
+		Shader(const CreateInfo& createInfo) noexcept;
 
 		Shader(const Shader&) = delete;
 		Shader& operator=(const Shader&) = delete;

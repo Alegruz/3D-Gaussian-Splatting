@@ -67,7 +67,9 @@
         "xutility": "cpp",
         "list": "cpp",
         "unordered_map": "cpp",
-        "xhash": "cpp"
+        "xhash": "cpp",
+        "deque": "cpp",
+        "unordered_set": "cpp"
     },
     "cmake.configureArgs": ["-DCMAKE_BUILD_TYPE=Debug"]
 }

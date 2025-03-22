@@ -4,7 +4,7 @@
 
 namespace iiixrlab::graphics
 {
-    Shader::Shader(CreateInfo& createInfo) noexcept
+    Shader::Shader(const CreateInfo& createInfo) noexcept
         : mDevice(createInfo.Device)
         , mEntryPoint(createInfo.EntryPoint)
         , mShaderModule(mDevice.CreateShaderModule(createInfo.Path.string().c_str(), createInfo.Path))
