@@ -24,7 +24,7 @@ namespace iiixrlab::graphics
         }
     }
 
-    void IRenderable::Update(CommandBuffer& commandBuffer) noexcept
+    void IRenderable::Update(CommandBuffer& commandBuffer, [[maybe_unused]] const float deltaTime) noexcept
     {
         if (mUploadingFrameIndex == commandBuffer.GetFrameResource().GetFrameIndex())
         {
@@ -34,7 +34,7 @@ namespace iiixrlab::graphics
 
     void IRenderable::Upload(CommandBuffer& commandBuffer, Buffer& dstBuffer) noexcept
     {
-        commandBuffer.CopyBuffer(*mStagingBuffer, dstBuffer, { .srcOffset = 0, .dstOffset = 0, .size = mStagingBuffer->GetSize() });
+        commandBuffer.CopyBuffer(*mStagingBuffer, dstBuffer, { .srcOffset = 0, .dstOffset = 0, .size = mStagingBuffer->GetTotalSize() });
         mUploadingFrameIndex = commandBuffer.GetFrameResource().GetFrameIndex();
     }
 } // namespace iiixrlab::graphics

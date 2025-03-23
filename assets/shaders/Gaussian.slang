@@ -1,13 +1,26 @@
+// Stage Structs
 struct VSInput
 {
-    uint vertexID : SV_VertexID;
-    uint instanceID : SV_InstanceID;
-    float3 position : POSITION;
+    uint VertexId : SV_VertexID;
+    uint InstanceId : SV_InstanceID;
+    float3 Position : POSITION;
 }
 
 struct VSOutput
 {
-    float4 position : SV_Position;
+    float4 Position : SV_Position;
+};
+
+// Constant Buffers
+struct ViewProjection
+{
+    float4x4 View;
+    float4x4 Projection;
+};
+
+cbuffer CameraBuffer
+{
+    ViewProjection CameraInfo;
 };
 
 static float3 TRIANGLE_VERTICES[3] = {
@@ -20,8 +33,10 @@ static float3 TRIANGLE_VERTICES[3] = {
 VSOutput VSMain(VSInput input)
 {
     VSOutput output;
-    output.position = float4(TRIANGLE_VERTICES[input.vertexID], 1.0f);
-    output.position.xyz += input.position;
+    output.Position = float4(TRIANGLE_VERTICES[input.VertexId], 1.0f);
+    output.Position.xyz += input.Position;
+    output.Position = mul(output.Position, CameraInfo.View);
+    output.Position = mul(output.Position, CameraInfo.Projection);
     return output;
 }
 

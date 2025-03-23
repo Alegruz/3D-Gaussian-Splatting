@@ -12,6 +12,9 @@
 #include "3dgs/graphics/ShaderManager.h"
 #include "3dgs/graphics/SwapChain.h"
 #include "3dgs/graphics/Texture.h"
+
+#include "3dgs/scene/Camera.h"
+
 #include "3dgs/Window.h"
 
 namespace iiixrlab::graphics
@@ -82,7 +85,7 @@ namespace iiixrlab::graphics
 		mCurrentFrameIndex = (mCurrentFrameIndex + 1) % swapChain.GetFramesCount();
 	}
 
-	void Renderer::Update() noexcept
+	void Renderer::Update(const float deltaTime) noexcept
 	{
 		FrameResource& currentFrameResource = *mFrameResources[mCurrentFrameIndex];
 		currentFrameResource.Wait();
@@ -97,6 +100,6 @@ namespace iiixrlab::graphics
 
 		CommandBuffer& commandBuffer = currentFrameResource.GetCommandBuffer();
 
-		mRenderScene->Update(commandBuffer);
+		mRenderScene->Update(commandBuffer, deltaTime);
 	}
 }

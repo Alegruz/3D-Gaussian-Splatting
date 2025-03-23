@@ -2,6 +2,9 @@
 
 #include "3dgs/graphics/Buffer.h"
 #include "3dgs/graphics/CommandPool.h"
+#include "3dgs/graphics/ConstantBuffer.h"
+#include "3dgs/graphics/DescriptorPool.h"
+#include "3dgs/graphics/DescriptorSet.h"
 #include "3dgs/graphics/Instance.h"
 #include "3dgs/graphics/Pipeline.h"
 #include "3dgs/graphics/PhysicalDevice.h"
@@ -39,20 +42,18 @@ namespace iiixrlab::graphics
 			};
 			mQueues.push_back(std::make_unique<Queue>(queueCreateInfo));
 		}
+	
+		mDescriptorPool = CreateDescriptorPool("DescriptorPool", 1024, { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1024 }, { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1024 }, { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1024 }, { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1024 }, { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1024 }, { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1024 }, { VK_DESCRIPTOR_TYPE_SAMPLER, 1024 } });
 	}
 
 	Device::~Device() noexcept
 	{
 		vkDeviceWaitIdle(mDevice);
+
+		mDescriptorPool.reset();
 		for (std::unique_ptr<Queue>& queue : mQueues)
 		{
 			queue->Wait();
-		}
-
-		if (mDescriptorPool != VK_NULL_HANDLE)
-		{
-			vkDestroyDescriptorPool(mDevice, mDescriptorPool, nullptr);
-			mDescriptorPool = VK_NULL_HANDLE;
 		}
 
 		mCommandPool->FreeCommandBuffers();
@@ -113,6 +114,8 @@ namespace iiixrlab::graphics
 #if defined(_DEBUG)
 		SetDebugName(createInfo.Name.c_str(), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, createInfo.DescriptorSetLayouts[0]);
 #endif	// defined(_DEBUG)
+
+		AllocateDescriptorSets(*mDescriptorPool, createInfo.DescriptorSets, createInfo.DescriptorSetLayouts[0], { createInfo.Name });
 
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 		{
@@ -381,6 +384,96 @@ namespace iiixrlab::graphics
 		return commandBuffer;
 	}
 
+	void Device::AllocateDescriptorSets(DescriptorPool& inoutDescriptorPool, std::vector<std::unique_ptr<DescriptorSet>>& inoutDescriptorSets, const VkDescriptorSetLayout descriptorSetLayout, const std::vector<std::string>& names) noexcept
+	{
+        const uint32_t descriptorSetLayoutCount = static_cast<uint32_t>(names.size());
+
+        VkDescriptorSetAllocateInfo descriptorSetAllocateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext = nullptr,
+            .descriptorPool = inoutDescriptorPool.mDescriptorPool,
+            .descriptorSetCount = descriptorSetLayoutCount,
+            .pSetLayouts = &descriptorSetLayout,
+        };
+
+        inoutDescriptorSets.reserve(descriptorSetLayoutCount);
+
+        std::vector<VkDescriptorSet> descriptorSets(descriptorSetLayoutCount, VK_NULL_HANDLE);
+        VkResult vr = vkAllocateDescriptorSets(mDevice, &descriptorSetAllocateInfo, descriptorSets.data());
+        assert(vr == VK_SUCCESS);
+        for (uint32_t i = 0; i < descriptorSetLayoutCount; ++i)
+        {
+            VkDescriptorSet descriptorSet = descriptorSets[i];
+            assert(descriptorSet != VK_NULL_HANDLE);
+#if defined(_DEBUG)
+			std::string debugName = names[i] + "_[" + std::to_string(i) + ']';
+            SetDebugName(debugName.c_str(), VK_OBJECT_TYPE_DESCRIPTOR_SET, descriptorSet);
+#endif	// defined(_DEBUG)
+        }
+
+        for (uint32_t i = 0; i < descriptorSetLayoutCount; ++i)
+        {
+            DescriptorSet::CreateInfo descriptorSetCreateInfo =
+            {
+                .Device = *this,
+                .DescriptorSet = descriptorSets[i],
+            };
+
+			DescriptorSet descriptorSet(descriptorSetCreateInfo);
+			inoutDescriptorSets.push_back(std::make_unique<DescriptorSet>(std::move(descriptorSet)));
+        }
+	}
+
+	std::unique_ptr<ConstantBuffer> Device::CreateConstantBuffer(const char* name, const uint32_t bufferSize) noexcept
+	{
+		Buffer::CreateInfo createInfo =
+		{
+			.GpuResourceCreateInfo = GpuResource::CreateInfo
+			{
+				.Device = *this,
+				.Name = name,
+				.Size = 1,
+				.Stride = bufferSize,
+			},
+			.Buffer = VK_NULL_HANDLE,
+			.BufferMemory = VK_NULL_HANDLE,
+		};
+		Buffer::create(mDevice, createInfo, mPhysicalDevice, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		ConstantBuffer constantBuffer(createInfo);
+		return std::make_unique<ConstantBuffer>(std::move(constantBuffer));
+	}
+
+	std::unique_ptr<DescriptorPool> Device::CreateDescriptorPool(const char* name, const uint32_t maxSets, const std::vector<VkDescriptorPoolSize>& poolSizes) noexcept
+	{
+		VkResult vr = VK_SUCCESS;
+		assert(name != nullptr);
+
+		DescriptorPool::CreateInfo createInfo =
+		{
+			.Device = *this,
+			.DescriptorPool = VK_NULL_HANDLE,
+		};
+
+		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
+		{
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+			.maxSets = maxSets,
+			.poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
+			.pPoolSizes = poolSizes.data(),
+		};
+		vr = vkCreateDescriptorPool(mDevice, &descriptorPoolCreateInfo, nullptr, &createInfo.DescriptorPool);
+		assert(vr == VK_SUCCESS && createInfo.DescriptorPool != VK_NULL_HANDLE);
+#if defined(_DEBUG)
+		SetDebugName(name, VK_OBJECT_TYPE_DESCRIPTOR_POOL, createInfo.DescriptorPool);
+#endif	// defined(_DEBUG)
+
+		DescriptorPool descriptorPool(createInfo);
+		return std::make_unique<DescriptorPool>(std::move(descriptorPool));
+	}
+
 	VkImageView Device::CreateImageView(const char* name, const VkImage image, const VkFormat format, const uint8_t usage) noexcept
 	{
 		VkResult vr = VK_SUCCESS;
@@ -448,6 +541,22 @@ namespace iiixrlab::graphics
 		return semaphore;
 	}
 
+	void Device::BindDescriptorSet(DescriptorSet& descriptorSet, const ConstantBuffer& constantBuffer) noexcept
+	{
+		const VkDescriptorBufferInfo& descriptorBufferInfo = constantBuffer.GetDescriptorBufferInfo();
+        VkWriteDescriptorSet writerDescriptorSet =
+		{
+			.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext = nullptr,
+			.dstSet = descriptorSet.mDescriptorSet,
+			.descriptorCount = 1,
+			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.pBufferInfo = &descriptorBufferInfo,
+		};
+
+		vkUpdateDescriptorSets(mDevice, 1, &writerDescriptorSet, 0, nullptr);
+	}
+
 	std::unique_ptr<StagingBuffer> Device::CreateStagingBuffer(const char* name, const uint32_t stagingBufferSize) noexcept
 	{
 		Buffer::CreateInfo createInfo =
@@ -456,7 +565,8 @@ namespace iiixrlab::graphics
 			{
 				.Device = *this,
 				.Name = name,
-				.Size = stagingBufferSize,
+				.Size = 1,
+				.Stride = stagingBufferSize,
 			},
 			.Buffer = VK_NULL_HANDLE,
 			.BufferMemory = VK_NULL_HANDLE,
@@ -577,7 +687,8 @@ namespace iiixrlab::graphics
 			{
 				.Device = *this,
 				.Name = name,
-				.Size = vertexBufferSize,
+				.Size = 1,
+				.Stride = vertexBufferSize,
 			},
 			.Buffer = VK_NULL_HANDLE,
 			.BufferMemory = VK_NULL_HANDLE,
@@ -585,6 +696,24 @@ namespace iiixrlab::graphics
 		Buffer::create(mDevice, createInfo, mPhysicalDevice, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		VertexBuffer vertexBuffer(createInfo);
 		return std::make_unique<VertexBuffer>(std::move(vertexBuffer));
+	}
+
+	void Device::DeallocateDescriptorSets(DescriptorPool& descriptorPool, std::vector<std::unique_ptr<DescriptorSet>>& descriptorSets) noexcept
+	{
+		if (descriptorSets.empty())
+		{
+			return;
+		}
+
+		std::vector<VkDescriptorSet> descriptorSetHandles;
+		descriptorSetHandles.reserve(descriptorSets.size());
+		for (const std::unique_ptr<DescriptorSet>& descriptorSet : descriptorSets)
+		{
+			descriptorSetHandles.push_back(descriptorSet->mDescriptorSet);
+		}
+
+		vkFreeDescriptorSets(mDevice, descriptorPool.mDescriptorPool, static_cast<uint32_t>(descriptorSetHandles.size()), descriptorSetHandles.data());
+		descriptorSets.clear();
 	}
 
 	void Device::DestroyCommandBuffer(VkCommandBuffer& commandBuffer) noexcept
@@ -602,6 +731,15 @@ namespace iiixrlab::graphics
 		{
 			vkDestroyCommandPool(mDevice, commandPool, nullptr);
 			commandPool = VK_NULL_HANDLE;
+		}
+	}
+
+	void Device::DestroyDescriptorPool(VkDescriptorPool& descriptorPool) noexcept
+	{
+		if (descriptorPool != VK_NULL_HANDLE)
+		{
+			vkDestroyDescriptorPool(mDevice, descriptorPool, nullptr);
+			descriptorPool = VK_NULL_HANDLE;
 		}
 	}
 
@@ -731,34 +869,9 @@ namespace iiixrlab::graphics
 		return *mCommandPool;
 	}
 
-	void Device::InitializeDescriptors() noexcept
-	{
-		VkResult vr = VK_SUCCESS;
-		const uint32_t framesCount = mPhysicalDevice.GetInstance().GetSwapChain().GetFramesCount();
-
-		VkDescriptorPoolSize descriptorPoolSize =
-		{
-			.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.descriptorCount = framesCount,
-		};
-
-		VkDescriptorPoolCreateInfo descriptorPoolCreateInfo =
-		{
-			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-			.pNext = nullptr,
-			.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-			.maxSets = framesCount,
-			.poolSizeCount = 1,
-			.pPoolSizes = &descriptorPoolSize,
-		};
-
-		vr = vkCreateDescriptorPool(mDevice, &descriptorPoolCreateInfo, nullptr, &mDescriptorPool);
-		assert(vr == VK_SUCCESS && mDescriptorPool != VK_NULL_HANDLE);
-	}
-
 	void Device::MapMemory(Buffer& buffer, void** data) noexcept
 	{
-		VkResult vr = vkMapMemory(mDevice, buffer.mBufferMemory, 0, buffer.GetSize(), 0, data);
+		VkResult vr = vkMapMemory(mDevice, buffer.mBufferMemory, 0, buffer.GetTotalSize(), 0, data);
 		assert(vr == VK_SUCCESS);
 	}
 

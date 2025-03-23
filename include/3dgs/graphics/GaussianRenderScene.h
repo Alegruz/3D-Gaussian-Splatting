@@ -25,6 +25,6 @@ namespace iiixrlab::graphics
 		void Render(CommandBuffer& commandBuffer) noexcept override;
 	
 	protected:
-        void updateInner(iiixrlab::graphics::CommandBuffer& commandBuffer) noexcept;
+        void updateInner(iiixrlab::graphics::CommandBuffer& commandBuffer, const float deltaTime) noexcept;
 	};
 } // namespace iiixrlab::graphics

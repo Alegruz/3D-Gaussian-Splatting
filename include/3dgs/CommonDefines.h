@@ -14,9 +14,17 @@
 #define IIIXRLAB_MAKE_API_VERSION(variant, major, minor, patch) \
     ((((uint32_t)(variant)) << 29U) | (((uint32_t)(major)) << 22U) | (((uint32_t)(minor)) << 12U) | ((uint32_t)(patch)))
 
-
-namespace iiixrlab::graphics
+namespace iiixrlab
 {
-    static constexpr const uint32_t DEFAULT_FRAMES_COUNT = 3;
-    static constexpr const uint32_t MINIMUM_VK_API_VERSION = VK_API_VERSION_1_3;
-} // namespace iiixrlab::graphics
+    namespace graphics
+    {
+        static constexpr const uint32_t DEFAULT_FRAMES_COUNT = 3;
+        static constexpr const uint32_t MINIMUM_VK_API_VERSION = VK_API_VERSION_1_3;
+    }   // namespace graphics
+
+    namespace math
+    {
+        template<typename T>
+        concept Arithmetic = std::is_arithmetic<T>::value;
+    }
+} // namespace iiixrlab

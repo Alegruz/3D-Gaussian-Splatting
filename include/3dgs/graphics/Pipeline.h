@@ -4,6 +4,8 @@
 
 namespace iiixrlab::graphics
 {
+	class ConstantBuffer;
+	class DescriptorSet;
 	class Device;
 
 	class Pipeline final
@@ -20,7 +22,7 @@ namespace iiixrlab::graphics
 			VkPipelineLayout PipelineLayout;
 			VkPipeline Pipeline;
 			std::vector<VkDescriptorSetLayout> DescriptorSetLayouts;
-			VkDescriptorPool DescriptorPool;
+			std::vector<std::unique_ptr<DescriptorSet>> DescriptorSets;
 		};
 		
 	public:
@@ -28,36 +30,20 @@ namespace iiixrlab::graphics
 		Pipeline(const Pipeline&) = delete;
 		Pipeline& operator=(const Pipeline&) = delete;
 
-		IIIXRLAB_INLINE constexpr Pipeline(Pipeline&& other) noexcept
-			: mDevice(other.mDevice)
-			, mName(std::move(other.mName))
-			, mPipelineLayout(other.mPipelineLayout)
-			, mPipeline(other.mPipeline)
-			, mDescriptorSetLayouts(std::move(other.mDescriptorSetLayouts))
-			, mDescriptorPool(other.mDescriptorPool)
-		{
-			other.mPipelineLayout = VK_NULL_HANDLE;
-			other.mPipeline = VK_NULL_HANDLE;
-			other.mDescriptorSetLayouts.clear();
-			other.mDescriptorPool = VK_NULL_HANDLE;
-		}
+		explicit Pipeline(Pipeline&& other) noexcept;
 
 		Pipeline& operator=(Pipeline&&) = delete;
 
 		~Pipeline() noexcept;
+		
+		IIIXRLAB_INLINE DescriptorSet& GetDescriptorSet(const uint32_t index) noexcept { return *mDescriptorSets[index]; }
+		IIIXRLAB_INLINE const DescriptorSet& GetDescriptorSet(const uint32_t index) const noexcept { return *mDescriptorSets[index]; }
+		IIIXRLAB_INLINE constexpr uint32_t GetDescriptorSetCount() const noexcept { return static_cast<uint32_t>(mDescriptorSets.size()); }
 
 		IIIXRLAB_INLINE const std::string& GetName() const noexcept { return mName; }
 
 	protected:
-		IIIXRLAB_INLINE constexpr Pipeline(const CreateInfo& createInfo) noexcept
-			: mDevice(createInfo.Device)
-			, mName(createInfo.Name)
-			, mPipelineLayout(createInfo.PipelineLayout)
-			, mPipeline(createInfo.Pipeline)
-			, mDescriptorSetLayouts(std::move(createInfo.DescriptorSetLayouts))
-			, mDescriptorPool(createInfo.DescriptorPool)
-		{
-		}
+		explicit Pipeline(CreateInfo& createInfo) noexcept;
 
 	private:
 		Device& mDevice;
@@ -65,6 +51,6 @@ namespace iiixrlab::graphics
 		VkPipelineLayout mPipelineLayout;
 		VkPipeline mPipeline;
 		std::vector<VkDescriptorSetLayout> mDescriptorSetLayouts;
-		VkDescriptorPool mDescriptorPool;
+		std::vector<std::unique_ptr<DescriptorSet>> mDescriptorSets;
 	};
 } // namespace iiixrlab::graphics

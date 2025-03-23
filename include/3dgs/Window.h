@@ -28,6 +28,8 @@ namespace iiixrlab
 		IIIXRLAB_INLINE constexpr uint32_t GetHeight() const noexcept { return mApplicationInfo.Height; }
 
 #if defined(_WIN32)
+		LRESULT HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) noexcept;
+
 		IIIXRLAB_INLINE constexpr HINSTANCE GetInstance() const noexcept { return mhInstance; }
 		IIIXRLAB_INLINE constexpr HWND GetWindow() const noexcept { return mhWnd; }
 #endif  // defined(_WIN32)
@@ -35,6 +37,7 @@ namespace iiixrlab
 	private:
 		ApplicationInfo mApplicationInfo;
 		std::wstring    mProjectNameW;
+		bool			mbIsInFocus;
 		
 #if defined(_WIN32)
 		HINSTANCE       mhInstance;

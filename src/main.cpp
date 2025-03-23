@@ -14,6 +14,7 @@
 #include "3dgs/scene/Gaussian.h"
 #include "3dgs/scene/Scene.h"
 
+#include "3dgs/InputManager.h"
 #include "3dgs/Window.h"
 
 namespace iiixrlab
@@ -152,6 +153,8 @@ int main(int argc, char** argv)
 	{
 		.Device = device,
 		.Pipelines = std::move(pipelines),
+		.Width = static_cast<float>(swapChain.GetExtent().width),
+		.Height = static_cast<float>(swapChain.GetExtent().height),
 	};
 	std::unique_ptr<iiixrlab::graphics::GaussianRenderScene> gaussianRenderScene = std::make_unique<iiixrlab::graphics::GaussianRenderScene>(renderSceneCreateInfo);
 
@@ -165,13 +168,33 @@ int main(int argc, char** argv)
 
 	renderer.SetRenderScene(std::move(gaussianRenderScene));
 
+	LARGE_INTEGER startingTime;
+	LARGE_INTEGER endingTime;
+	LARGE_INTEGER elapsedMicroseconds;
+	LARGE_INTEGER frequency;
+
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&startingTime);
+
 	bool bQuitApplication = false;
 	while (bQuitApplication == false)
 	{
 		const bool bHasEvents = window.HandleEvents(bQuitApplication);
 		if (bHasEvents == false)
 		{
-			renderer.Update();
+			// Update our time
+			QueryPerformanceCounter(&endingTime);
+			elapsedMicroseconds.QuadPart = endingTime.QuadPart - startingTime.QuadPart;
+			elapsedMicroseconds.QuadPart *= 1000000;
+			elapsedMicroseconds.QuadPart /= frequency.QuadPart;
+			QueryPerformanceFrequency(&frequency);
+			QueryPerformanceCounter(&startingTime);
+
+			const float deltaTime = static_cast<float>(elapsedMicroseconds.QuadPart) / 1000000.0f;
+			
+			iiixrlab::InputManager& inputManager = iiixrlab::InputManager::GetInstance();
+			inputManager.Update();
+			renderer.Update(deltaTime);
 			renderer.Render();
 		}
 	}

@@ -7,8 +7,14 @@
 #include "3dgs/graphics/Pipeline.h"
 #include "3dgs/graphics/VertexBuffer.h"
 
+namespace iiixrlab::scene
+{
+	class Camera;
+}
+
 namespace iiixrlab::graphics
 {
+
 	class CommandBuffer;
 	class Device;
 	class Pipeline;
@@ -20,6 +26,8 @@ namespace iiixrlab::graphics
 		{
 			Device& Device;
 			std::unordered_map<std::string, std::unique_ptr<Pipeline>>&& Pipelines;
+			float Width;
+			float Height;
 		};
 
 	public:
@@ -34,17 +42,18 @@ namespace iiixrlab::graphics
 		virtual ~IRenderScene() noexcept;
 
 		virtual void Render(CommandBuffer& commandBuffer) noexcept = 0;
-		IIIXRLAB_INLINE void Update(CommandBuffer& commandBuffer) noexcept { update(commandBuffer); }
+		IIIXRLAB_INLINE void Update(CommandBuffer& commandBuffer, const float deltaTime) noexcept { update(commandBuffer, deltaTime); }
 
 	protected:
 		IRenderScene(CreateInfo& createInfo) noexcept;
 
-		virtual void update(CommandBuffer& commandBuffer) noexcept = 0;
+		virtual void update(CommandBuffer& commandBuffer, const float deltaTime) noexcept = 0;
 
 	protected:
 		Device& mDevice;
 		std::unordered_map<std::string, std::unique_ptr<Pipeline>> mPipelines;
 		std::unique_ptr<VertexBuffer> mVertexBuffer;
+		std::unique_ptr<iiixrlab::scene::Camera>	mCamera;
 	};
 
 	template<Renderable TRenderable>
@@ -67,10 +76,10 @@ namespace iiixrlab::graphics
 		constexpr void AddRenderable(std::unique_ptr<TRenderable>&& renderable) noexcept;
 
 	protected:
-		void update(CommandBuffer& commandBuffer) noexcept override final;
-		virtual void updateInner(CommandBuffer& commandBuffer) noexcept = 0;
+		void update(CommandBuffer& commandBuffer, const float deltaTime) noexcept override final;
+		virtual void updateInner(CommandBuffer& commandBuffer, const float deltaTime) noexcept = 0;
 		
 	private:
-		std::vector<std::unique_ptr<TRenderable>> mRenderables;
+		std::vector<std::unique_ptr<TRenderable>>	mRenderables;
 	};
 } // namespace iiixrlab::graphics

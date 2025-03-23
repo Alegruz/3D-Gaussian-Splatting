@@ -39,7 +39,7 @@ namespace iiixrlab
 			IIIXRLAB_INLINE const Instance& GetInstance() const noexcept { return *mInstance; }
 
 			void Render() noexcept;
-			void Update() noexcept;
+			void Update(const float deltaTime) noexcept;
 	
 		private:
 			std::unique_ptr<IRenderScene>	mRenderScene;

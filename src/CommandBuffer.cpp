@@ -1,6 +1,7 @@
 #include "3dgs/graphics/CommandBuffer.h"
 
 #include "3dgs/graphics/Buffer.h"
+#include "3dgs/graphics/DescriptorSet.h"
 #include "3dgs/graphics/Device.h"
 #include "3dgs/graphics/FrameResource.h"
 #include "3dgs/graphics/Instance.h"
@@ -16,6 +17,7 @@ namespace iiixrlab::graphics
         : mDevice(createInfo.Device)
         , mCommandBuffer(createInfo.CommandBuffer)
 		, mFrameResourceOrNull(nullptr)
+		, mPipelineOrNull(nullptr)
     {
         assert(mCommandBuffer != VK_NULL_HANDLE);
     }
@@ -177,6 +179,14 @@ namespace iiixrlab::graphics
 	void CommandBuffer::Bind(const Pipeline& pipeline) noexcept
 	{
 		vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.mPipeline);
+		mPipelineOrNull = &pipeline;
+
+		const uint32_t descriptorSetCount = pipeline.GetDescriptorSetCount();
+		for (uint32_t i = 0; i < descriptorSetCount; ++i)
+		{
+			const DescriptorSet& descriptorSet = pipeline.GetDescriptorSet(i);
+			vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.mPipelineLayout, i, 1, &descriptorSet.mDescriptorSet, 0, nullptr);
+		}
 	}
 
 	void CommandBuffer::Bind(const VertexBuffer& vertexBuffer) noexcept
@@ -235,6 +245,9 @@ namespace iiixrlab::graphics
 
 		vr = vkEndCommandBuffer(mCommandBuffer);
         assert(vr == VK_SUCCESS);
+
+		mPipelineOrNull = nullptr;
+		mFrameResourceOrNull = nullptr;
     }
 
     void CommandBuffer::Reset() noexcept

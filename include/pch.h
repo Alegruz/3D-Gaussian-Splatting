@@ -10,11 +10,13 @@
 
 // CRT
 #include <cassert>
+#include <concepts>
 #include <cstdint>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <memory>
+#include <numbers>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -31,3 +33,6 @@
 
 // Common
 #include "3dgs/CommonDefines.h"
+
+#include "3dgs/math/Matrix.hpp"
+#include "3dgs/math/Vector.h"

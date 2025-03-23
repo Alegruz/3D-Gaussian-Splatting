@@ -240,7 +240,6 @@ namespace iiixrlab::graphics
 		return VK_TRUE;
 	}
 
-
 	Instance::Instance(const CreateInfo& createInfo) noexcept
 		: mInstance(VK_NULL_HANDLE)
 		, mApiVersion(0)

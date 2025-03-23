@@ -34,11 +34,14 @@ namespace iiixrlab::graphics
 			: GpuResource(std::move(other))
 			, mBuffer(other.mBuffer)
 			, mBufferMemory(other.mBufferMemory)
+			, mDescriptorBufferInfo(other.mDescriptorBufferInfo)
 		{
 			other.mBuffer = VK_NULL_HANDLE;
 			other.mBufferMemory = VK_NULL_HANDLE;
 		}
 		Buffer& operator=(Buffer&&) = delete;
+
+		IIIXRLAB_INLINE constexpr const VkDescriptorBufferInfo& GetDescriptorBufferInfo() const noexcept { return mDescriptorBufferInfo; }
 
 	protected:
 		static void create(VkDevice device, CreateInfo& inoutCreateInfo, const PhysicalDevice& physicalDevice, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags& memoryPropertyFlag) noexcept;
@@ -48,11 +51,13 @@ namespace iiixrlab::graphics
 			: GpuResource(createInfo.GpuResourceCreateInfo)
 			, mBuffer(createInfo.Buffer)
 			, mBufferMemory(createInfo.BufferMemory)
+			, mDescriptorBufferInfo({ .buffer = mBuffer, .offset = 0, .range = GetTotalSize() })
 		{
 		}
 
 	protected:
 		VkBuffer mBuffer;
 		VkDeviceMemory mBufferMemory;
+		VkDescriptorBufferInfo mDescriptorBufferInfo;
 	};
 }

@@ -1,8 +1,10 @@
 #include "3dgs/graphics/GaussianRenderScene.h"
 
 #include "3dgs/graphics/CommandBuffer.h"
+#include "3dgs/graphics/DescriptorSet.h"
 #include "3dgs/graphics/Device.h"
 #include "3dgs/graphics/IRenderScene.hpp"
+#include "3dgs/graphics/Pipeline.h"
 #include "3dgs/graphics/Shader.h"
 #include "3dgs/graphics/ShaderManager.h"
 #include "3dgs/graphics/StagingBuffer.h"
@@ -38,7 +40,7 @@ namespace iiixrlab::graphics
 		}
 	}
 
-	void GaussianRenderScene::updateInner(CommandBuffer& commandBuffer) noexcept
+	void GaussianRenderScene::updateInner(CommandBuffer& commandBuffer, [[maybe_unused]] const float deltaTime) noexcept
 	{
 		if (mVertexBuffer == nullptr)
 		{
@@ -49,13 +51,25 @@ namespace iiixrlab::graphics
 				vertexBufferSize += gaussianInfo.NumPoints * 3 * sizeof(float);
 			}
 			mVertexBuffer = mDevice.CreateVertexBuffer("GaussianVertexBuffer", vertexBufferSize);
+
+			auto pipelineFindResult = mPipelines.find("GaussianPipeline");
+			if (pipelineFindResult == mPipelines.end())
+			{
+				std::cerr << "Pipeline: GaussianPipeline is not found.\n";
+				IIIXRLAB_DEBUG_BREAK();
+				return;
+			}
+			Pipeline& pipeline = *pipelineFindResult->second;
+			DescriptorSet& descriptorSet = pipeline.GetDescriptorSet(0);
+			const ConstantBuffer& cameraBuffer = mCamera->GetConstantBuffer();
+			descriptorSet.Bind(cameraBuffer);
 		}
 
 		for (const auto& renderable : GetRenderables())
 		{
 			[[maybe_unused]] const iiixrlab::scene::GaussianInfo& gaussianInfo = renderable->GetGaussianInfo();
 			StagingBuffer& stagingBuffer = renderable->GetStagingBuffer();
-			commandBuffer.CopyBuffer(stagingBuffer, *mVertexBuffer, { .srcOffset = 0, .dstOffset = 0, .size = stagingBuffer.GetSize() });
+			commandBuffer.CopyBuffer(stagingBuffer, *mVertexBuffer, { .srcOffset = 0, .dstOffset = 0, .size = stagingBuffer.GetTotalSize() });
 		}
 	}
 } // namespace iiixrlab::graphics

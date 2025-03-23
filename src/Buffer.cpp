@@ -11,7 +11,7 @@ namespace iiixrlab::graphics
 		VkBufferCreateInfo bufferCreateInfo =
 		{
 			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-			.size = inoutCreateInfo.GpuResourceCreateInfo.Size,
+			.size = inoutCreateInfo.GpuResourceCreateInfo.Size * inoutCreateInfo.GpuResourceCreateInfo.Stride,
 			.usage = usage,
 			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 		};

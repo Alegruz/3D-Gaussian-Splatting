@@ -77,7 +77,8 @@
         "stack": "cpp",
         "stop_token": "cpp",
         "thread": "cpp",
-        "typeindex": "cpp"
+        "typeindex": "cpp",
+        "numbers": "cpp"
     },
     "cmake.configureArgs": ["-DCMAKE_BUILD_TYPE=Debug"]
 }

@@ -33,7 +33,7 @@ namespace iiixrlab::graphics
         IIIXRLAB_INLINE StagingBuffer& GetStagingBuffer() noexcept { return *mStagingBuffer; }
         IIIXRLAB_INLINE const StagingBuffer& GetStagingBuffer() const noexcept { return *mStagingBuffer; }
 
-        void Update(CommandBuffer& commandBuffer) noexcept;
+        void Update(CommandBuffer& commandBuffer, const float deltaTime) noexcept;
         void Upload(CommandBuffer& commandBuffer, Buffer& dstBuffer) noexcept;
 
     protected:
