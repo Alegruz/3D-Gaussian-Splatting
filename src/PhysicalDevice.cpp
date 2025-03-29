@@ -320,6 +320,19 @@ namespace iiixrlab::graphics
 				deviceExtensionBuilder.AddExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 			}
 		}
+
+		// VK_EXT_descriptor_indexing
+		if (apiVersion < VK_API_VERSION_1_2)
+		{
+			if (apiVersion < VK_API_VERSION_1_1)
+			{
+				deviceExtensionBuilder.AddExtension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+				deviceExtensionBuilder.AddExtension(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+			}
+
+			deviceExtensionBuilder.AddExtension(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+		}
+
 		const std::vector<const char*>& extensionNamesToEnable = deviceExtensionBuilder.GetExtensionsToEnable();
 
 		VkDeviceCreateInfo deviceCreateInfo =

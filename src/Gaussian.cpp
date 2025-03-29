@@ -80,7 +80,7 @@ namespace iiixrlab::scene
 		};
 
 		std::vector<iiixrlab::math::Vector3f> sphereVertices = GenerateSphereVertices(1.0f, 4, 4);
-		const uint32_t vertexBufferSize = static_cast<uint32_t>(sphereVertices.size() * sizeof(iiixrlab::math::Vector3f) + createInfo.GaussianInfo.NumPoints * 3 * sizeof(float));
+		const uint32_t vertexBufferSize = static_cast<uint32_t>(sphereVertices.size() * sizeof(iiixrlab::math::Vector3f) + createInfo.GaussianInfo.NumPoints * sizeof(InstanceInfo));
 		renderableCreateInfo.StagingBuffer = createInfo.Device.CreateStagingBuffer("Gaussian Vertex Buffer", vertexBufferSize);
 
 		Gaussian gaussian = Gaussian(renderableCreateInfo, createInfo.GaussianInfo, std::move(sphereVertices));
@@ -97,6 +97,23 @@ namespace iiixrlab::scene
 		uint32_t offset = 0;
 		memcpy(data + offset, mSphereVertices.data(), mSphereVertices.size() * sizeof(iiixrlab::math::Vector3f));
 		offset += static_cast<uint32_t>(mSphereVertices.size() * sizeof(iiixrlab::math::Vector3f));
-		memcpy(data + offset, mGaussianInfo.Positions.data(), mGaussianInfo.NumPoints * 3 * sizeof(float));
+
+		for (uint32_t i = 0; i < mGaussianInfo.NumPoints; ++i)
+		{
+			const uint32_t indexBy3 = i * 3;
+			const uint32_t indexBy4 = i * 4;
+			// const uint32_t indexBy45 = i * 45;
+
+			InstanceInfo instanceInfo =
+			{
+				.Position = iiixrlab::math::Vector3f{mGaussianInfo.Positions[indexBy3], mGaussianInfo.Positions[indexBy3 + 1], mGaussianInfo.Positions[indexBy3 + 2]},
+				.ScaleInLogScale = iiixrlab::math::Vector3f{mGaussianInfo.Scales[indexBy3], mGaussianInfo.Scales[indexBy3 + 1], mGaussianInfo.Scales[indexBy3 + 2]},
+				.Quaternion = iiixrlab::math::Vector4f{mGaussianInfo.Rotations[indexBy4], mGaussianInfo.Rotations[indexBy4 + 1], mGaussianInfo.Rotations[indexBy4 + 2], mGaussianInfo.Rotations[indexBy4 + 3]},
+				.ColorAsShDcComponentAndAlphaBeforeSigmoidActivision = iiixrlab::math::Vector4f{mGaussianInfo.Colors[indexBy3], mGaussianInfo.Colors[indexBy3 + 1], mGaussianInfo.Colors[indexBy3 + 2], mGaussianInfo.Alphas[i]},
+			};
+			// memcpy(instanceInfo.SphericalHarmonicsCoefficients.data(), &mGaussianInfo.SphericalHarmonics[indexBy45], sizeof(float) * 45);
+			memcpy(data + offset, &instanceInfo, sizeof(InstanceInfo));
+			offset += sizeof(InstanceInfo);
+		}
 	}
 } // namespace iiixrlab::scene

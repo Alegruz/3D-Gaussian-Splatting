@@ -118,7 +118,7 @@ int main(int argc, char** argv)
 				},
 				{
 					.binding = 1,
-					.stride = 3 * sizeof(float),
+					.stride = sizeof(iiixrlab::scene::Gaussian::InstanceInfo),
 					.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE,
 				},
 			},
@@ -134,6 +134,24 @@ int main(int argc, char** argv)
 					.location = 1,
 					.binding = 1,
 					.format = VK_FORMAT_R32G32B32_SFLOAT,
+					.offset = 0,
+				},
+				{
+					.location = 2,
+					.binding = 1,
+					.format = VK_FORMAT_R8G8B8_UNORM,
+					.offset = 0,
+				},
+				{
+					.location = 3,
+					.binding = 1,
+					.format = VK_FORMAT_R8G8B8A8_UNORM,
+					.offset = 0,
+				},
+				{
+					.location = 4,
+					.binding = 1,
+					.format = VK_FORMAT_R8G8B8A8_UNORM,
 					.offset = 0,
 				},
 			},

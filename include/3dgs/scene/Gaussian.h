@@ -19,6 +19,19 @@ namespace iiixrlab::scene
             std::vector<iiixrlab::math::Vector3f> SphereVertices;
         };
 
+        struct InstanceInfo final
+        {
+            iiixrlab::math::Vector3f Position;
+            iiixrlab::math::Vector3f ScaleInLogScale;
+            iiixrlab::math::Vector4f Quaternion;
+            iiixrlab::math::Vector4f ColorAsShDcComponentAndAlphaBeforeSigmoidActivision;
+        };
+
+        struct ConstantBufferInfo final
+        {
+            std::array<float, 45>    SphericalHarmonicsCoefficients;
+        };
+
     public:
         static std::unique_ptr<Gaussian> Create(CreateInfo& createInfo) noexcept;
 

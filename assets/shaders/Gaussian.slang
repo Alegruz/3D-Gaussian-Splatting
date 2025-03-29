@@ -3,14 +3,22 @@ struct VSInput
 {
     uint VertexId : SV_VertexID;
     uint InstanceId : SV_InstanceID;
+
+    // Vertex
     float3 Position : POSITION;
+
+    // Instance
     float3 Translate : TRANSLATE;
+    float3 ScaleInLogScale : SCALE;
+    float4 Quaternion : ROTATE;
+    float4 ColorAsShDcComponentAndAlphaBeforeSigmoidActivision : COLOR;
 }
 
 struct VSOutput
 {
     float4 Position : SV_Position;
-    uint InstanceId : SV_InstanceID;
+
+    float4 ColorAsShDcComponentAndAlphaBeforeSigmoidActivision : COLOR;
 };
 
 // Constant Buffers
@@ -29,12 +37,17 @@ cbuffer CameraBuffer
 VSOutput VSMain(VSInput input)
 {
     VSOutput output;
-    // output.Position = float4(TRIANGLE_VERTICES[input.VertexId], 1.0f);
+
     output.Position = float4(input.Position, 1.0f);
+    output.Position.xyz *= exp(input.ScaleInLogScale);
+    const float3 t = 2.0f * cross(input.Quaternion.xyz, output.Position.xyz);
+    output.Position.xyz += input.Quaternion.w * t + cross(input.Quaternion.xyz, t);
     output.Position.xyz += input.Translate;
     output.Position = mul(output.Position, CameraInfo.View);
     output.Position = mul(output.Position, CameraInfo.Projection);
-    output.InstanceId = input.InstanceId;
+
+    output.ColorAsShDcComponentAndAlphaBeforeSigmoidActivision = input.ColorAsShDcComponentAndAlphaBeforeSigmoidActivision;
+
     return output;
 }
 
@@ -45,22 +58,18 @@ struct Fragment
 
 typedef VSOutput PSInput;
 
-static const float4 COLORS[8] = {
-    float4(1.0f, 0.0f, 0.0f, 1.0f), // Red
-    float4(0.0f, 1.0f, 0.0f, 1.0f), // Green
-    float4(0.0f, 0.0f, 1.0f, 1.0f), // Blue
-    float4(1.0f, 1.0f, 0.0f, 1.0f), // Yellow
-    float4(1.0f, 0.0f, 1.0f, 1.0f), // Magenta
-    float4(0.0f, 1.0f, 1.0f, 1.0f), // Cyan
-    float4(0.5f, 0.5f, 0.5f, 1.0f), // Gray
-    float4(1.0f, 0.5f, 0.0f, 1.0f)  // Orange
-};
+float sigmoid(float x)
+{
+    return 1.0f / (1.0f + exp(-x));
+}
 
 [shader("fragment")]
 Fragment PSMain(PSInput input) : SV_Target0
 {
     Fragment output;
+
+    output.color.rgb = 0.5 + 0.282095 * input.ColorAsShDcComponentAndAlphaBeforeSigmoidActivision.rgb;
+    output.color.a = sigmoid(input.ColorAsShDcComponentAndAlphaBeforeSigmoidActivision.a);
     
-    output.color = COLORS[input.InstanceId % 8];
     return output;
 }

@@ -3,6 +3,7 @@
 #include "3dgs/graphics/CommandBuffer.h"
 #include "3dgs/graphics/DescriptorSet.h"
 #include "3dgs/graphics/Device.h"
+#include "3dgs/scene/Gaussian.h"
 #include "3dgs/graphics/IRenderScene.hpp"
 #include "3dgs/graphics/Pipeline.h"
 #include "3dgs/graphics/Shader.h"
@@ -59,7 +60,7 @@ namespace iiixrlab::graphics
 				vertexBufferSize += static_cast<uint32_t>(sphereVertices.size() * sizeof(iiixrlab::math::Vector3f));
 
 				const iiixrlab::scene::GaussianInfo& gaussianInfo = renderable->GetGaussianInfo();
-				vertexBufferSize += gaussianInfo.NumPoints * 3 * sizeof(float);
+				vertexBufferSize += gaussianInfo.NumPoints * sizeof(iiixrlab::scene::Gaussian::InstanceInfo);
 			}
 			mVertexBuffer = mDevice.CreateVertexBuffer("GaussianVertexBuffer", vertexBufferSize);
 
