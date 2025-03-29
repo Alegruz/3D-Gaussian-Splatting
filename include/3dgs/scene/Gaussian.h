@@ -19,11 +19,6 @@ namespace iiixrlab::scene
             std::vector<iiixrlab::math::Vector3f> SphereVertices;
         };
 
-        struct GaussianInstanceInfo final
-        {
-            iiixrlab::math::Vector3f Position;
-        };
-
     public:
         static std::unique_ptr<Gaussian> Create(CreateInfo& createInfo) noexcept;
 
