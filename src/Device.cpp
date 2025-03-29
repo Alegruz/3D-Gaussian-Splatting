@@ -872,7 +872,7 @@ namespace iiixrlab::graphics
 	void Device::MapMemory(Buffer& buffer, void** data) noexcept
 	{
 		VkResult vr = vkMapMemory(mDevice, buffer.mBufferMemory, 0, buffer.GetTotalSize(), 0, data);
-		assert(vr == VK_SUCCESS);
+		assert(vr == VK_SUCCESS && *data != nullptr);
 	}
 
 	void Device::ResetFence(VkFence& fence) noexcept

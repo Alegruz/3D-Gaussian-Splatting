@@ -16,6 +16,12 @@ namespace iiixrlab::scene
         {
             iiixrlab::graphics::Device& Device;
             const GaussianInfo& GaussianInfo;
+            std::vector<iiixrlab::math::Vector3f> SphereVertices;
+        };
+
+        struct GaussianInstanceInfo final
+        {
+            iiixrlab::math::Vector3f Position;
         };
 
     public:
@@ -33,11 +39,13 @@ namespace iiixrlab::scene
         Gaussian& operator=(Gaussian&&) = delete;
 
         IIIXRLAB_INLINE const GaussianInfo& GetGaussianInfo() const noexcept { return mGaussianInfo; }
+        IIIXRLAB_INLINE const std::vector<iiixrlab::math::Vector3f>& GetSphereVertices() const noexcept { return mSphereVertices; }
 
     protected:
-        Gaussian(iiixrlab::graphics::IRenderable::CreateInfo& createInfo, const GaussianInfo& gaussianInfo) noexcept;
+        Gaussian(iiixrlab::graphics::IRenderable::CreateInfo& createInfo, const GaussianInfo& gaussianInfo, std::vector<iiixrlab::math::Vector3f>&& sphereVertices) noexcept;
 
     private:
         const GaussianInfo& mGaussianInfo;
+        std::vector<iiixrlab::math::Vector3f> mSphereVertices;
     };
 } // namespace iiixrlab::scene

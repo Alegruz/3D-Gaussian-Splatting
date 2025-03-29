@@ -66,45 +66,45 @@ namespace iiixrlab::graphics
 
 		iiixrlab::math::Vector3f direction;
         InputManager& inputManager = InputManager::GetInstance();
-		const iiixrlab::InputManager::eKeyState leftKeyState = inputManager.GetKeyState('a');
+		const iiixrlab::InputManager::eKeyState leftKeyState = inputManager.GetKeyState('A');
 		if (leftKeyState == iiixrlab::InputManager::eKeyState::PRESSED || leftKeyState == iiixrlab::InputManager::eKeyState::PRESSING)
 		{
 			direction.GetX() -= 1.0f;
 		}
 		else
 		{
-			const iiixrlab::InputManager::eKeyState rightKeyState = inputManager.GetKeyState('d');
+			const iiixrlab::InputManager::eKeyState rightKeyState = inputManager.GetKeyState('D');
 			if (rightKeyState == iiixrlab::InputManager::eKeyState::PRESSED || rightKeyState == iiixrlab::InputManager::eKeyState::PRESSING)
 			{
 				direction.GetX() += 1.0f;
 			}
 		}
 
-		const iiixrlab::InputManager::eKeyState frontKeyState = inputManager.GetKeyState('w');
+		const iiixrlab::InputManager::eKeyState frontKeyState = inputManager.GetKeyState('W');
         if (frontKeyState == iiixrlab::InputManager::eKeyState::PRESSED || frontKeyState == iiixrlab::InputManager::eKeyState::PRESSING)
         {
             direction.GetZ() += 1.0f;
         }
         else
         {
-            const iiixrlab::InputManager::eKeyState backKeyState = inputManager.GetKeyState('s');
+            const iiixrlab::InputManager::eKeyState backKeyState = inputManager.GetKeyState('S');
             if (backKeyState == iiixrlab::InputManager::eKeyState::PRESSED || backKeyState == iiixrlab::InputManager::eKeyState::PRESSING)
             {
                 direction.GetZ() -= 1.0f;
             }
         }
 
-		const iiixrlab::InputManager::eKeyState upKeyState = inputManager.GetKeyState('e');
+		const iiixrlab::InputManager::eKeyState upKeyState = inputManager.GetKeyState('E');
         if (upKeyState == iiixrlab::InputManager::eKeyState::PRESSED || upKeyState == iiixrlab::InputManager::eKeyState::PRESSING)
         {
-            direction.GetY() += 1.0f;
+            direction.GetY() -= 1.0f;
         }
         else
         {
-            const iiixrlab::InputManager::eKeyState downKeyState = inputManager.GetKeyState('q');
+            const iiixrlab::InputManager::eKeyState downKeyState = inputManager.GetKeyState('Q');
             if (downKeyState == iiixrlab::InputManager::eKeyState::PRESSED || downKeyState == iiixrlab::InputManager::eKeyState::PRESSING)
             {
-                direction.GetY() -= 1.0f;
+                direction.GetY() += 1.0f;
             }
         }
 

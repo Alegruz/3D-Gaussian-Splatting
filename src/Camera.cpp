@@ -28,8 +28,8 @@ namespace iiixrlab::scene
 		({
 			1.0f / (AspectRatio * ProjectionPlane),	0.0f,								0.0f,											0.0f,
 			0.0f,									1.0f / ProjectionPlane,				0.0f,											0.0f,
-			0.0f,									0.0f,								FarPlane / (FarPlane - NearPlane),				-NearPlane * FarPlane / (FarPlane - NearPlane),
-			0.0f,									0.0f,								1.0f,											0.0f
+			0.0f,									0.0f,								FarPlane / (FarPlane - NearPlane),				1.0f,
+			0.0f,									0.0f,								-NearPlane * FarPlane / (FarPlane - NearPlane),	0.0f
 		});
 		
 		mConstantBuffer = createInfo.Device.CreateConstantBuffer("CameraConstantBuffer", sizeof(mInfo));
@@ -79,7 +79,7 @@ namespace iiixrlab::scene
 	{
 		const float pitch = std::atanf(deltaPosition.GetY() / mDistanceToOutput);
 		const float yaw = std::atanf(deltaPosition.GetX() / mDistanceToOutput);
-		return iiixrlab::math::Vector3f{pitch, yaw, 0.0f};
+		return iiixrlab::math::Vector3f{pitch, -yaw, 0.0f};
 	}
 
 	void Camera::updateViewMatrix(const iiixrlab::math::Vector3f& position, const float pitch, const float yaw) noexcept
@@ -94,11 +94,11 @@ namespace iiixrlab::scene
 		const iiixrlab::math::Vector3f zAxis = iiixrlab::math::Vector3f{ sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw };
 
 		mInfo.View = iiixrlab::math::Matrix4x4f
-		({
-			xAxis.GetX(),   xAxis.GetY(), 	xAxis.GetZ(), 	-iiixrlab::math::Vector3f::Dot(xAxis, position),
-			yAxis.GetX(),   yAxis.GetY(), 	yAxis.GetZ(), 	-iiixrlab::math::Vector3f::Dot(yAxis, position),
-			zAxis.GetX(),   zAxis.GetY(), 	zAxis.GetZ(), 	-iiixrlab::math::Vector3f::Dot(zAxis, position),
-			0.0f,       	0.0f, 			0.0f, 			1.0f,
-		});
+		{
+			xAxis.GetX(),   yAxis.GetX(), 	zAxis.GetX(), 	0.0f,
+			xAxis.GetY(),   yAxis.GetY(), 	zAxis.GetY(), 	0.0f,
+			xAxis.GetZ(),   yAxis.GetZ(), 	zAxis.GetZ(), 	0.0f,
+			-iiixrlab::math::Vector3f::Dot(xAxis, position), -iiixrlab::math::Vector3f::Dot(yAxis, position), -iiixrlab::math::Vector3f::Dot(zAxis, position), 1.0f,
+		};
 	}
 } // namespace iiixrlab::scene

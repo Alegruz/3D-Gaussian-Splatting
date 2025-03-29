@@ -119,7 +119,7 @@ namespace iiixrlab::graphics
 			.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.clearValue = VkClearValue{.color = {0.0f, 0.0f, 0.0f, 1.0f}},
+			.clearValue = VkClearValue{.color = {0.1f, 0.1f, 0.1f, 1.0f}},
 		};
 
 		VkRenderingAttachmentInfo depthAttachmentInfo =
@@ -189,11 +189,22 @@ namespace iiixrlab::graphics
 		}
 	}
 
-	void CommandBuffer::Bind(const VertexBuffer& vertexBuffer) noexcept
+	void CommandBuffer::Bind(const VertexBuffer& vertexBuffer, const std::vector<VertexBindingInfo>& vertexBindingInfos) noexcept
 	{
-		VkBuffer vertexBuffers[] = {vertexBuffer.mBuffer};
-		VkDeviceSize offsets[] = {0};
-		vkCmdBindVertexBuffers(mCommandBuffer, 0, 1, vertexBuffers, offsets);
+		const uint32_t buffersCount = static_cast<uint32_t>(vertexBindingInfos.size());
+		if (buffersCount == 0)
+		{
+			std::cerr << "VertexBindingInfos is empty." << std::endl;
+			IIIXRLAB_DEBUG_BREAK();
+			return;
+		}
+
+		VkDeviceSize offset = 0;
+		for (const VertexBindingInfo& vertexBindingInfo : vertexBindingInfos)
+		{
+			vkCmdBindVertexBuffers(mCommandBuffer, vertexBindingInfo.BindingIndex, 1, &vertexBuffer.mBuffer, &offset);
+			offset += vertexBindingInfo.Stride;
+		}
 	}
 
 	void CommandBuffer::CopyBuffer(const Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy) noexcept

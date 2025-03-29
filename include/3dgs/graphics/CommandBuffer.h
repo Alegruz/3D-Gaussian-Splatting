@@ -21,6 +21,12 @@ namespace iiixrlab::graphics
 			Device& Device;
 			VkCommandBuffer CommandBuffer;
 		};
+
+		struct VertexBindingInfo final
+		{
+			uint32_t 		BindingIndex;
+			VkDeviceSize	Stride;
+		};
 	
 	public:
 		CommandBuffer() = delete;
@@ -45,7 +51,7 @@ namespace iiixrlab::graphics
 		void BeginRender() noexcept;
 		void BindDescriptorSets(const VkPipelineLayout pipelineLayout, const VkDescriptorSet& descriptorSet) noexcept;
 		void Bind(const Pipeline& pipeline) noexcept;
-		void Bind(const VertexBuffer& vertexBuffer) noexcept;
+		void Bind(const VertexBuffer& vertexBuffer, const std::vector<VertexBindingInfo>& vertexBindingInfos) noexcept;
 		void CopyBuffer(const Buffer& srcBuffer, Buffer& dstBuffer, const VkBufferCopy& bufferCopy) noexcept;
 		void Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t firstVertex, const uint32_t firstInstance) noexcept;
 		void DrawIndexed(const uint32_t indexCount, const uint32_t instanceCount, const uint32_t firstIndex, const int32_t vertexOffset, const uint32_t firstInstance) noexcept;

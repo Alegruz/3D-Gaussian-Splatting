@@ -41,6 +41,7 @@ namespace iiixrlab
         void OnMouseMove(const math::Vector2f& deltaPosition) noexcept;
 
         void Update() noexcept;
+        void PostUpdate() noexcept;
 
     private:
         IIIXRLAB_INLINE constexpr InputManager() noexcept = default;

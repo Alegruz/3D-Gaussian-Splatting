@@ -5,7 +5,7 @@
 namespace iiixrlab::math
 {
 	template<uint8_t RowSize, uint8_t ColumnSize, Arithmetic ElementType>
-	class Matrix
+	class Matrix final
 	{
 	public:
 		static constexpr ElementType Dot(const Matrix& lhs, const Matrix& rhs) noexcept;
@@ -26,7 +26,7 @@ namespace iiixrlab::math
 
 		constexpr Matrix& operator=(const ElementType* elements) noexcept;
 
-		virtual IIIXRLAB_INLINE constexpr ~Matrix() noexcept = default;
+		IIIXRLAB_INLINE constexpr ~Matrix() noexcept = default;
 
 		IIIXRLAB_INLINE constexpr Matrix(Matrix&& other) noexcept = default;
 		IIIXRLAB_INLINE constexpr Matrix& operator=(Matrix&&) noexcept = default;
@@ -60,12 +60,12 @@ namespace iiixrlab::math
 
 		IIIXRLAB_INLINE constexpr ElementType& GetX() noexcept { return mElements[0][0]; }
 		IIIXRLAB_INLINE constexpr const ElementType& GetX() const noexcept { return mElements[0][0]; }
-		IIIXRLAB_INLINE constexpr ElementType& GetY() noexcept { return mElements[1][0]; }
-		IIIXRLAB_INLINE constexpr const ElementType& GetY() const noexcept { return mElements[1][0]; }
-		IIIXRLAB_INLINE constexpr ElementType& GetZ() noexcept { return mElements[2][0]; }
-		IIIXRLAB_INLINE constexpr const ElementType& GetZ() const noexcept { return mElements[2][0]; }
-		IIIXRLAB_INLINE constexpr ElementType& GetW() noexcept { return mElements[3][0]; }
-		IIIXRLAB_INLINE constexpr const ElementType& GetW() const noexcept { return mElements[3][0]; }
+		IIIXRLAB_INLINE constexpr ElementType& GetY() noexcept { return mElements[0][1]; }
+		IIIXRLAB_INLINE constexpr const ElementType& GetY() const noexcept { return mElements[0][1]; }
+		IIIXRLAB_INLINE constexpr ElementType& GetZ() noexcept { return mElements[0][2]; }
+		IIIXRLAB_INLINE constexpr const ElementType& GetZ() const noexcept { return mElements[0][2]; }
+		IIIXRLAB_INLINE constexpr ElementType& GetW() noexcept { return mElements[0][3]; }
+		IIIXRLAB_INLINE constexpr const ElementType& GetW() const noexcept { return mElements[0][3]; }
 	
 	protected:
 		ElementType mElements[RowSize][ColumnSize];

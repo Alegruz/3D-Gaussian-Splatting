@@ -32,11 +32,19 @@ namespace iiixrlab::graphics
 		}
 		Pipeline& pipeline = *pipelineFindResult->second;
 		commandBuffer.Bind(pipeline);
-		commandBuffer.Bind(*mVertexBuffer);
+		
 		for (const auto& renderable : GetRenderables())
 		{
+			const std::vector<iiixrlab::math::Vector3f>& sphereVertices = renderable->GetSphereVertices();
+			const uint32_t sphereVerticesCount = static_cast<uint32_t>(sphereVertices.size());
 			const iiixrlab::scene::GaussianInfo& gaussianInfo = renderable->GetGaussianInfo();
-			commandBuffer.Draw(3, gaussianInfo.NumPoints, 0, 0);
+			std::vector<CommandBuffer::VertexBindingInfo> vertexBindingInfos;
+			vertexBindingInfos.push_back({ .BindingIndex = 0, .Stride = sphereVerticesCount * sizeof(iiixrlab::math::Vector3f) });
+			vertexBindingInfos.push_back({ .BindingIndex = 1, .Stride = gaussianInfo.NumPoints * 3 * sizeof(float) });
+			commandBuffer.Bind(*mVertexBuffer, vertexBindingInfos);
+
+			// commandBuffer.Draw(sphereVerticesCount, 1, 0, 0);
+			commandBuffer.Draw(sphereVerticesCount, gaussianInfo.NumPoints, 0, 0);
 		}
 	}
 
@@ -47,6 +55,9 @@ namespace iiixrlab::graphics
 			uint32_t vertexBufferSize = 0;
 			for (const auto& renderable : GetRenderables())
 			{
+				const std::vector<iiixrlab::math::Vector3f>& sphereVertices = renderable->GetSphereVertices();
+				vertexBufferSize += static_cast<uint32_t>(sphereVertices.size() * sizeof(iiixrlab::math::Vector3f));
+
 				const iiixrlab::scene::GaussianInfo& gaussianInfo = renderable->GetGaussianInfo();
 				vertexBufferSize += gaussianInfo.NumPoints * 3 * sizeof(float);
 			}

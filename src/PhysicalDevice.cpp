@@ -234,6 +234,7 @@ namespace iiixrlab::graphics
 		{
 			physicalDeviceVulkan11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
 			physicalDeviceVulkan11Features.pNext = pNext;
+			physicalDeviceVulkan11Features.shaderDrawParameters = VK_TRUE;
 			pNext = &physicalDeviceVulkan11Features;
 		}
 

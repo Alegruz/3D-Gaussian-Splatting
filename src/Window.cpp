@@ -150,6 +150,17 @@ namespace iiixrlab
 #endif  // defined(_WIN32)
 	{
 #if defined(_WIN32)
+		RAWINPUTDEVICE rid =
+		{
+			.usUsagePage = 0x01,	// MOUSE	
+			.usUsage = 0X02,
+			.dwFlags = 0u,			// Default flags
+			.hwndTarget = NULL
+		};
+
+		BOOL bResult = RegisterRawInputDevices(&rid, 1u, sizeof(rid));
+		assert(FAILED(bResult) == FALSE);
+
 		HICON hIcon = NULL;
 		TCHAR szExePath[MAX_PATH];
 		GetModuleFileName(NULL, szExePath, MAX_PATH);
@@ -231,7 +242,7 @@ namespace iiixrlab
 			IIIXRLAB_DEBUG_BREAK();
 		}
 
-		const BOOL bResult = ShowWindow(mhWnd, SW_SHOWDEFAULT);
+		bResult = ShowWindow(mhWnd, SW_SHOWDEFAULT);
 		if (FAILED(bResult))
 		{
 			DWORD dwError = GetLastError();
